@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Receiving Tool</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#F5F1E9;
+    --surface:#FFFFFF;
+    --surface-2:#FBF8F2;
+    --border:#E3DBC9;
+    --ink:#211E19;
+    --muted:#756D5D;
+    --accent:#B5561E;
+    --accent-ink:#FFFFFF;
+    --garnish:#3C7A56;
+    --garnish-soft:#E6F1EA;
+    --beer:#A9720E;
+    --beer-soft:#F6EAD1;
+    --spirit:#6C4A82;
+    --spirit-soft:#EFE7F4;
+    --danger:#B23B3B;
+    --danger-soft:#F6E3E1;
+    --focus:#1C6FBB;
+    --shadow:0 1px 2px rgba(33,30,25,.06), 0 6px 16px rgba(33,30,25,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#17150F; --surface:#201D17; --surface-2:#251F17; --border:#3A3324;
+      --ink:#F2EDE1; --muted:#AEA48F; --accent:#E28A45; --accent-ink:#1C1006;
+      --garnish:#69BB8E; --garnish-soft:#1E2D24; --beer:#E3AC4C; --beer-soft:#332711;
+      --spirit:#BFA0D8; --spirit-soft:#2B2233; --danger:#E28E8E; --danger-soft:#33211E;
+      --focus:#7BB6EA; --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#17150F; --surface:#201D17; --surface-2:#251F17; --border:#3A3324;
+    --ink:#F2EDE1; --muted:#AEA48F; --accent:#E28A45; --accent-ink:#1C1006;
+    --garnish:#69BB8E; --garnish-soft:#1E2D24; --beer:#E3AC4C; --beer-soft:#332711;
+    --spirit:#BFA0D8; --spirit-soft:#2B2233; --danger:#E28E8E; --danger-soft:#33211E;
+    --focus:#7BB6EA; --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    padding-inline:16px; padding-block:0 40px;
+    max-width:820px; margin-inline:auto;
+  }
+  h1,h2,h3{font-family:'Oswald',system-ui,sans-serif; text-transform:uppercase; letter-spacing:.02em; margin:0;}
+  input,select,button{font-family:inherit; font-size:15px;}
+  input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+
+  .topbar{
+    position:sticky; top:env(safe-area-inset-top,0px); background:var(--bg);
+    padding-block:16px 8px; z-index:20; border-bottom:1px solid var(--border);
+  }
+  .brand{display:flex; align-items:center; gap:12px; margin-bottom:14px;}
+  .brand-mark{
+    width:40px; height:40px; border-radius:9px; background:var(--accent); color:var(--accent-ink);
+    display:flex; align-items:center; justify-content:center; font-family:'Oswald',sans-serif;
+    font-weight:700; font-size:16px; flex:none;
+  }
+  .brand h1{font-size:20px;}
+  .brand-sub{margin:2px 0 0; color:var(--muted); font-size:12.5px;}
+
+  .tabs{display:flex; gap:6px;}
+  .tab-btn{
+    flex:1; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface);
+    color:var(--muted); font-weight:600; letter-spacing:.02em; cursor:pointer;
+  }
+  .tab-btn[aria-selected="true"]{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+
+  main{padding-top:18px;}
+
+  .meta-strip{
+    display:flex; flex-wrap:wrap; gap:8px 18px; padding:10px 14px; margin-bottom:16px;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+    font-size:13px; color:var(--muted);
+  }
+  .meta-strip strong{color:var(--ink); font-weight:600;}
+
+  .cat-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    margin-bottom:18px; box-shadow:var(--shadow); overflow:hidden;
+  }
+  .cat-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); }
+  .cat-head h2{font-size:16px;}
+  .cat-tag{
+    font-family:'Inter',sans-serif; font-size:11px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.06em; padding:4px 9px; border-radius:999px;
+  }
+  .cat-card--garnish .cat-head{border-top:4px solid var(--garnish);}
+  .cat-card--garnish .cat-tag{background:var(--garnish-soft); color:var(--garnish);}
+  .cat-card--beer .cat-head{border-top:4px solid var(--beer);}
+  .cat-card--beer .cat-tag{background:var(--beer-soft); color:var(--beer);}
+  .cat-card--spirit .cat-head{border-top:4px solid var(--spirit);}
+  .cat-card--spirit .cat-tag{background:var(--spirit-soft); color:var(--spirit);}
+
+  .item-list{padding:6px 16px 14px;}
+  .item-block{padding:12px 0; border-bottom:1px dashed var(--border);}
+  .item-block:last-child{border-bottom:none;}
+  .item-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;}
+  .item-head h3{font-size:13.5px; letter-spacing:.01em;}
+  .add-btn{
+    border:1px dashed var(--border); background:transparent; color:var(--accent); font-weight:600;
+    font-size:12.5px; padding:6px 10px; border-radius:7px; cursor:pointer; white-space:nowrap;
+  }
+  .add-btn:hover{background:var(--surface-2);}
+
+  .rows{display:flex; flex-direction:column; gap:8px;}
+  .entry-row{ display:grid; grid-template-columns:64px 1fr 28px; align-items:center; gap:8px; }
+  .entry-row--spirit{grid-template-columns:64px 1fr 1fr 28px;}
+  .entry-index{font-size:12px; color:var(--muted); font-weight:600;}
+  .field{
+    position:relative; display:flex; align-items:center; background:var(--surface-2);
+    border:1px solid var(--border); border-radius:8px; padding:0 10px;
+  }
+  .field input{
+    flex:1; min-width:0; border:none; background:transparent; padding:9px 4px; color:var(--ink);
+    font-variant-numeric:tabular-nums; font-weight:600;
+  }
+  .field input::placeholder{color:var(--muted); font-weight:400;}
+  .field .unit{font-size:11px; color:var(--muted); white-space:nowrap; padding-left:4px;}
+  select.input-size{
+    padding:9px 8px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2);
+    color:var(--ink); font-weight:600; font-size:13px;
+  }
+  .row-remove{
+    width:28px; height:28px; border-radius:7px; border:1px solid var(--border); background:var(--surface);
+    color:var(--muted); cursor:pointer; font-size:16px; line-height:1;
+  }
+  .row-remove:hover{background:var(--danger-soft); color:var(--danger); border-color:var(--danger-soft);}
+  .row-remove[hidden]{visibility:hidden;}
+
+  @media (max-width:520px){
+    .entry-row--spirit{grid-template-columns:1fr 1fr; grid-template-areas:"idx idx" "size open" "closed remove";}
+    .entry-row--spirit .entry-index{grid-area:idx;}
+    .entry-row--spirit select.input-size{grid-area:size;}
+    .entry-row--spirit .field:nth-of-type(1){grid-area:open;}
+    .entry-row--spirit .field:nth-of-type(2){grid-area:closed;}
+    .entry-row--spirit .row-remove{grid-area:remove; justify-self:end;}
+  }
+
+  /* ---- setup: reference fields ---- */
+  .ref-row{display:grid; grid-template-columns:1fr; gap:8px;}
+  .ref-row--pair{grid-template-columns:1fr 1fr;}
+  .ref-row--size{display:grid; grid-template-columns:56px 1fr 1fr; align-items:center; gap:8px; margin-bottom:6px;}
+  .ref-row--size:last-child{margin-bottom:0;}
+  .size-chip{
+    font-size:11.5px; font-weight:700; color:var(--muted); background:var(--surface-2);
+    border:1px solid var(--border); border-radius:7px; padding:8px 6px; text-align:center;
+  }
+  .setup-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;}
+  .field-block{display:flex; flex-direction:column; gap:6px;}
+  .field-block.full{grid-column:1/-1;}
+  label.f-label{font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;}
+  .field-block input, .field-block textarea{
+    padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--ink);
+  }
+  .field-block textarea{resize:vertical; min-height:64px;}
+  @media (max-width:480px){ .setup-grid{grid-template-columns:1fr;} }
+
+  .status-note{
+    margin-top:4px; margin-bottom:18px; padding:11px 14px; border-radius:10px;
+    background:var(--surface-2); border:1px solid var(--border); color:var(--muted); font-size:12.5px; line-height:1.5;
+  }
+
+  /* ---- setup lock ---- */
+  .lock-wrap{display:flex; justify-content:center; padding-top:24px;}
+  .lock-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow);
+    padding:24px 22px; max-width:340px; width:100%; text-align:center;
+  }
+  .lock-icon{
+    width:44px; height:44px; border-radius:10px; background:var(--spirit-soft); color:var(--spirit);
+    display:flex; align-items:center; justify-content:center; margin:0 auto 14px; font-size:20px;
+  }
+  .lock-card h2{font-size:16px; margin-bottom:6px;}
+  .lock-card p{color:var(--muted); font-size:13px; margin:0 0 16px; line-height:1.5;}
+  .lock-form{display:flex; flex-direction:column; gap:10px;}
+  .lock-form input{
+    padding:12px 14px; border-radius:9px; border:1px solid var(--border); background:var(--surface-2);
+    color:var(--ink); text-align:center; letter-spacing:.12em; font-weight:700; font-size:16px;
+  }
+  .lock-error{color:var(--danger); font-size:12.5px; min-height:16px; margin:0;}
+
+  .action-bar{
+    position:fixed; left:0; right:0; bottom:0; padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));
+    background:var(--surface); border-top:1px solid var(--border); display:flex; gap:10px;
+    max-width:820px; margin-inline:auto; z-index:30; box-shadow:0 -6px 16px rgba(33,30,25,.06);
+  }
+  .btn{ flex:1; padding:12px 14px; border-radius:10px; font-weight:700; letter-spacing:.02em; cursor:pointer; border:1px solid transparent; }
+  .btn-primary{background:var(--accent); color:var(--accent-ink);}
+  .btn-ghost{background:var(--surface); color:var(--ink); border-color:var(--border);}
+  .btn-ghost:hover{background:var(--surface-2);}
+
+  main{padding-bottom:96px;}
+
+  #results{margin-top:6px;}
+  .result-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 16px;
+    margin-bottom:14px; box-shadow:var(--shadow);
+  }
+  .result-card h2{font-size:15px; margin-bottom:10px; display:flex; align-items:center; gap:8px;}
+  .dot{width:10px; height:10px; border-radius:50%; flex:none;}
+  .dot--garnish{background:var(--garnish);} .dot--beer{background:var(--beer);} .dot--spirit{background:var(--spirit);}
+  .result-row{
+    display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+    padding:7px 0; border-bottom:1px solid var(--border); font-size:13.5px;
+  }
+  .result-row:last-of-type{border-bottom:none;}
+  .result-row .rv{font-variant-numeric:tabular-nums; font-weight:700; text-align:right;}
+  .flag{display:block; font-size:10.5px; font-weight:500; color:var(--danger); margin-top:2px;}
+  .export-wrap{display:flex; flex-direction:column; align-items:center; gap:8px; padding-top:6px;}
+  .btn-export{
+    background:var(--ink); color:var(--bg); border:none; padding:13px 26px; border-radius:10px;
+    font-weight:700; letter-spacing:.02em; cursor:pointer; font-size:14.5px;
+  }
+  .export-hint{color:var(--muted); font-size:12px; text-align:center;}
+  #toast{
+    position:fixed; left:50%; bottom:88px; transform:translateX(-50%) translateY(10px); background:var(--ink);
+    color:var(--bg); padding:9px 16px; border-radius:999px; font-size:13px; font-weight:600; opacity:0;
+    pointer-events:none; transition:opacity .2s, transform .2s; z-index:40;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  [hidden]{display:none!important;}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">RT</span>
+    <div>
+      <h1>Receiving Tool</h1>
+      <p class="brand-sub">Initial inventory count</p>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button type="button" role="tab" id="tab-btn-report" class="tab-btn" aria-selected="true">Report</button>
+    <button type="button" role="tab" id="tab-btn-setup" class="tab-btn" aria-selected="false">Setup</button>
+  </nav>
+</header>
+
+<main>
+  <section id="panel-report">
+    <div class="meta-strip">
+      <span><strong id="meta-location">No location set</strong></span>
+      <span id="meta-date">No date set</span>
+      <span id="meta-resp">No responsible set</span>
+    </div>
+    <div id="categories-report"></div>
+  </section>
+
+  <section id="panel-setup" hidden>
+    <div id="setup-lock" class="lock-wrap">
+      <div class="lock-card">
+        <div class="lock-icon">&#128274;</div>
+        <h2>Setup is locked</h2>
+        <p>Enter the access code to edit reference weights and general information.</p>
+        <form class="lock-form" id="lock-form">
+          <input id="lock-input" type="password" inputmode="numeric" autocomplete="off" placeholder="Access code" aria-label="Access code">
+          <button type="submit" class="btn btn-primary">Unlock</button>
+          <p class="lock-error" id="lock-error"></p>
+        </form>
+      </div>
+    </div>
+
+    <div id="setup-content" hidden>
+      <div class="setup-grid">
+        <div class="field-block">
+          <label class="f-label" for="s-location">Location</label>
+          <input id="s-location" type="text" placeholder="e.g. Main bar">
+        </div>
+        <div class="field-block">
+          <label class="f-label" for="s-date">Count date</label>
+          <input id="s-date" type="date">
+        </div>
+        <div class="field-block">
+          <label class="f-label" for="s-responsible">Responsible</label>
+          <input id="s-responsible" type="text" placeholder="Name of the counter">
+        </div>
+        <div class="field-block">
+          <label class="f-label" for="s-shift">Shift</label>
+          <input id="s-shift" type="text" placeholder="e.g. Opening, closing...">
+        </div>
+        <div class="field-block full">
+          <label class="f-label" for="s-notes">Notes</label>
+          <textarea id="s-notes" placeholder="General notes about this count..."></textarea>
+        </div>
+      </div>
+
+      <p class="status-note" id="storage-status">Checking where reference weights are saved...</p>
+
+      <div id="categories-setup"></div>
+    </div>
+  </section>
+
+  <section id="results" hidden></section>
+</main>
+
+<div class="action-bar">
+  <button type="button" class="btn btn-ghost" id="btn-reset">Reset</button>
+  <button type="button" class="btn btn-primary" id="btn-calc">Calculate</button>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // Change this to change the Setup access code.
+  var SETUP_ACCESS_CODE = "2026";
+
+  // Approximate density for spirits/beer used only when a reference
+  // weight is missing (fallback path). Real conversions use the
+  // empty/full reference weights entered in Setup instead.
+  var DENSITY_KG_PER_L = 0.95;
+
+  var GARNISH_ITEMS = [
+    {key:"lemon", name:"Lemon Fresh Box"},
+    {key:"lime",  name:"Lime Fresh Box"},
+    {key:"mint",  name:"Mint Fresh Box"}
+  ];
+  var BEER_ITEMS = [
+    {key:"stella",     name:"Stella"},
+    {key:"corona",     name:"Corona"},
+    {key:"guinness",   name:"Guinness"},
+    {key:"kronemburg", name:"Kronemburg"},
+    {key:"asahi",      name:"Asahi"},
+    {key:"modelo",     name:"Modelo"},
+    {key:"juicyass",   name:"Juicy Ass"},
+    {key:"jellyking",  name:"Jelly King"},
+    {key:"partydad",   name:"Party Dad"},
+    {key:"bellweiser", name:"Bellweiser"},
+    {key:"michelob",   name:"Michelob"},
+    {key:"nobaddaze",  name:"No Bad Daze"},
+    {key:"gooseisland",name:"Goose Island"},
+    {key:"naughtyneighbour", name:"Naughty Neighbour"}
+  ];
+  var SPIRIT_ITEMS = [
+    {key:"smirnoff", name:"Smirnoff Vodka"},
+    {key:"ketelone", name:"Ketel One"},
+    {key:"josegold", name:"Jose Gold"},
+    {key:"tanqueray",name:"Tanqueray"}
+  ];
+  var SIZES = [
+    {value:"0.75", label:"750 ml", slug:"0_75"},
+    {value:"1",    label:"1 L",    slug:"1"},
+    {value:"1.14", label:"1.14 L", slug:"1_14"}
+  ];
+
+  function h(tag, attrs, children){
+    var el = document.createElement(tag);
+    attrs = attrs || {};
+    for (var k in attrs){
+      if (k === "class") el.className = attrs[k];
+      else if (k === "text") el.textContent = attrs[k];
+      else el.setAttribute(k, attrs[k]);
+    }
+    (children||[]).forEach(function(c){ el.appendChild(c); });
+    return el;
+  }
+  function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+  function fmt(n){
+    return (Math.round((n||0) * 100) / 100).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  /* =========================================================
+     REFERENCE WEIGHTS (Setup) — shared via the db capability
+     when available, otherwise saved to this browser only.
+     ========================================================= */
+  function defaultRefs(){
+    var garnish={}, beer={}, spirits={};
+    GARNISH_ITEMS.forEach(function(i){ garnish[i.key] = {full:0}; });
+    BEER_ITEMS.forEach(function(i){ beer[i.key] = {empty:0, full:0}; });
+    SPIRIT_ITEMS.forEach(function(i){
+      var sizes = {};
+      SIZES.forEach(function(s){ sizes[s.value] = {empty:0, full:0}; });
+      spirits[i.key] = sizes;
+    });
+    return {garnish:garnish, beer:beer, spirits:spirits};
+  }
+  var REFS = defaultRefs();
+  var REFS_LOCAL_KEY = "receiving-tool-refs-v1";
+  var dbCap = null, downloadsCap = null;
+
+  function mergeRefs(data){
+    if (!data) return;
+    if (data.garnish) for (var g in data.garnish) if (REFS.garnish[g]) REFS.garnish[g] = Object.assign({}, REFS.garnish[g], data.garnish[g]);
+    if (data.beer) for (var b in data.beer) if (REFS.beer[b]) REFS.beer[b] = Object.assign({}, REFS.beer[b], data.beer[b]);
+    if (data.spirits) for (var s in data.spirits) if (REFS.spirits[s]) {
+      for (var sz in data.spirits[s]) if (REFS.spirits[s][sz]) REFS.spirits[s][sz] = Object.assign({}, REFS.spirits[s][sz], data.spirits[s][sz]);
+    }
+  }
+  function saveRefsLocal(){
+    try{ localStorage.setItem(REFS_LOCAL_KEY, JSON.stringify(REFS)); }catch(e){}
+  }
+  function loadRefsLocal(){
+    try{
+      var raw = localStorage.getItem(REFS_LOCAL_KEY);
+      if (raw) mergeRefs(JSON.parse(raw));
+    }catch(e){}
+  }
+
+  var refsSaveTimer = null;
+  function scheduleSaveRefs(){
+    saveRefsLocal();
+    clearTimeout(refsSaveTimer);
+    refsSaveTimer = setTimeout(function(){
+      if (dbCap){
+        dbCap.doc("settings/refs").set(REFS).catch(function(){ /* local copy already saved */ });
+      }
+    }, 500);
+  }
+
+  function setStorageStatus(text){
+    var el = document.getElementById("storage-status");
+    if (el) el.textContent = text;
+  }
+
+  /* =========================================================
+     TABS
+     ========================================================= */
+  var tabReport = document.getElementById("tab-btn-report");
+  var tabSetup = document.getElementById("tab-btn-setup");
+  var panelReport = document.getElementById("panel-report");
+  var panelSetup = document.getElementById("panel-setup");
+
+  function selectTab(which){
+    var setupOn = which === "setup";
+    panelReport.hidden = setupOn;
+    panelSetup.hidden = !setupOn;
+    tabReport.setAttribute("aria-selected", String(!setupOn));
+    tabSetup.setAttribute("aria-selected", String(setupOn));
+  }
+  tabReport.addEventListener("click", function(){ selectTab("report"); });
+  tabSetup.addEventListener("click", function(){ selectTab("setup"); });
+
+  /* =========================================================
+     SETUP LOCK
+     ========================================================= */
+  var UNLOCK_KEY = "receiving-tool-setup-unlocked";
+  function isUnlocked(){ try{ return sessionStorage.getItem(UNLOCK_KEY) === "1"; }catch(e){ return false; } }
+  function setUnlocked(){ try{ sessionStorage.setItem(UNLOCK_KEY, "1"); }catch(e){} }
+
+  var lockScreen = document.getElementById("setup-lock");
+  var setupContent = document.getElementById("setup-content");
+  function refreshLockState(){
+    var unlocked = isUnlocked();
+    lockScreen.hidden = unlocked;
+    setupContent.hidden = !unlocked;
+  }
+  document.getElementById("lock-form").addEventListener("submit", function(e){
+    e.preventDefault();
+    var input = document.getElementById("lock-input");
+    var err = document.getElementById("lock-error");
+    if (input.value === SETUP_ACCESS_CODE){
+      setUnlocked();
+      err.textContent = "";
+      input.value = "";
+      refreshLockState();
+    } else {
+      err.textContent = "Incorrect code. Try again.";
+      input.value = "";
+      input.focus();
+    }
+  });
+  refreshLockState();
+
+  /* =========================================================
+     REPORT — dynamic count rows (boxes / kegs / bottles)
+     ========================================================= */
+  var catsReportEl = document.getElementById("categories-report");
+  var rowCounters = {};
+
+  function boxRow(itemKey, label){
+    var n = (rowCounters[itemKey] = (rowCounters[itemKey]||0) + 1);
+    var row = h("div", {class:"entry-row", "data-row":"1"});
+    row.appendChild(h("span", {class:"entry-index", text:label + " " + n}));
+    var field = h("div", {class:"field"});
+    var input = h("input", {type:"number", inputmode:"decimal", step:"0.01", min:"0",
+      class:"input-kg", "aria-label":label + " " + n + " weight in kg", placeholder:"0.00", id: itemKey+"-kg-"+n});
+    field.appendChild(input);
+    field.appendChild(h("span", {class:"unit", text:"kg"}));
+    row.appendChild(field);
+    row.appendChild(h("button", {type:"button", class:"row-remove", "data-remove":"1", "aria-label":"Remove " + label.toLowerCase() + " " + n, text:"×"}));
+    return row;
+  }
+
+  function spiritRow(itemKey, label){
+    var n = (rowCounters[itemKey] = (rowCounters[itemKey]||0) + 1);
+    var row = h("div", {class:"entry-row entry-row--spirit", "data-row":"1"});
+    row.appendChild(h("span", {class:"entry-index", text:label + " " + n}));
+
+    var select = h("select", {class:"input-size", "aria-label":"Size of " + label.toLowerCase() + " " + n, id: itemKey+"-size-"+n});
+    SIZES.forEach(function(s){ select.appendChild(h("option", {value:s.value, text:s.label})); });
+    row.appendChild(select);
+
+    var openField = h("div", {class:"field"});
+    var openInput = h("input", {type:"number", inputmode:"decimal", step:"0.01", min:"0",
+      class:"input-open-kg", "aria-label":label + " " + n + " open bottle weight in kg", placeholder:"0.00", id: itemKey+"-openkg-"+n});
+    openField.appendChild(openInput);
+    openField.appendChild(h("span", {class:"unit", text:"open (kg)"}));
+    row.appendChild(openField);
+
+    var closedField = h("div", {class:"field"});
+    var closedInput = h("input", {type:"number", inputmode:"numeric", step:"1", min:"0",
+      class:"input-closed-count", "aria-label":label + " " + n + " unopened count", placeholder:"0", id: itemKey+"-closed-"+n});
+    closedField.appendChild(closedInput);
+    closedField.appendChild(h("span", {class:"unit", text:"unopened"}));
+    row.appendChild(closedField);
+
+    row.appendChild(h("button", {type:"button", class:"row-remove", "data-remove":"1", "aria-label":"Remove " + label.toLowerCase() + " " + n, text:"×"}));
+    return row;
+  }
+
+  function renumber(rowsEl, label){
+    var rows = rowsEl.querySelectorAll(".entry-row");
+    rows.forEach(function(r, i){
+      r.querySelector(".entry-index").textContent = label + " " + (i+1);
+      var rb = r.querySelector(".row-remove");
+      rb.hidden = rows.length <= 1;
+    });
+  }
+
+  function buildItemBlock(item, kind, label, addText){
+    var block = h("div", {class:"item-block", "data-item-key":item.key, "data-kind":kind, "data-label":label});
+    var head = h("div", {class:"item-head"});
+    head.appendChild(h("h3", {text:item.name}));
+    head.appendChild(h("button", {type:"button", class:"add-btn", "data-add":"1", text:addText}));
+    block.appendChild(head);
+    var rowsEl = h("div", {class:"rows", "data-rows":"1"});
+    block.appendChild(rowsEl);
+    var firstRow = kind === "spirit" ? spiritRow(item.key, label) : boxRow(item.key, label);
+    rowsEl.appendChild(firstRow);
+    renumber(rowsEl, label);
+    return block;
+  }
+
+  function buildCategory(container, title, tagText, cls, items, kind, label, addText){
+    var card = h("div", {class:"cat-card " + cls});
+    var head = h("div", {class:"cat-head"});
+    head.appendChild(h("h2", {text:title}));
+    head.appendChild(h("span", {class:"cat-tag", text:tagText}));
+    card.appendChild(head);
+    var list = h("div", {class:"item-list"});
+    items.forEach(function(item){ list.appendChild(buildItemBlock(item, kind, label, addText)); });
+    card.appendChild(list);
+    container.appendChild(card);
+  }
+
+  buildCategory(catsReportEl, "Fresh Garnish", "KG", "cat-card--garnish", GARNISH_ITEMS, "box", "Box", "+ Add box");
+  buildCategory(catsReportEl, "Keg Beer", "L", "cat-card--beer", BEER_ITEMS, "box", "Keg", "+ Add keg");
+  buildCategory(catsReportEl, "Alcohol List Check", "L", "cat-card--spirit", SPIRIT_ITEMS, "spirit", "Bottle", "+ Add bottle");
+
+  catsReportEl.addEventListener("click", function(e){
+    var addBtn = e.target.closest("[data-add]");
+    if (addBtn){
+      var block = addBtn.closest(".item-block");
+      var rowsEl = block.querySelector("[data-rows]");
+      var key = block.dataset.itemKey, kind = block.dataset.kind, label = block.dataset.label;
+      var row = kind === "spirit" ? spiritRow(key, label) : boxRow(key, label);
+      rowsEl.appendChild(row);
+      renumber(rowsEl, label);
+      saveDraft();
+      return;
+    }
+    var rmBtn = e.target.closest("[data-remove]");
+    if (rmBtn){
+      var rowsEl2 = rmBtn.closest("[data-rows]");
+      if (rowsEl2.querySelectorAll(".entry-row").length > 1){
+        rmBtn.closest(".entry-row").remove();
+        renumber(rowsEl2, rowsEl2.closest(".item-block").dataset.label);
+        saveDraft();
+      }
+    }
+  });
+  catsReportEl.addEventListener("input", saveDraft);
+
+  /* =========================================================
+     SETUP — reference weight fields (mirrors the Report items)
+     ========================================================= */
+  var catsSetupEl = document.getElementById("categories-setup");
+
+  function refField(id, value, unitText, onChange){
+    var field = h("div", {class:"field"});
+    var input = h("input", {type:"number", inputmode:"decimal", step:"0.01", min:"0", id:id, placeholder:"0.00"});
+    input.value = value || "";
+    input.addEventListener("input", function(){ onChange(parseFloat(input.value) || 0); });
+    field.appendChild(input);
+    field.appendChild(h("span", {class:"unit", text:unitText}));
+    return {field:field, input:input};
+  }
+
+  function buildGarnishRef(item){
+    var block = h("div", {class:"item-block"});
+    block.appendChild(h("div", {class:"item-head"}, [h("h3", {text:item.name})]));
+    var row = h("div", {class:"ref-row"});
+    var label = h("label", {class:"f-label", for:"ref-garnish-"+item.key+"-full", text:"Full box weight (kg)"});
+    row.appendChild(label);
+    var r = refField("ref-garnish-"+item.key+"-full", REFS.garnish[item.key].full, "kg", function(v){
+      REFS.garnish[item.key].full = v; scheduleSaveRefs();
+    });
+    row.appendChild(r.field);
+    block.appendChild(row);
+    return block;
+  }
+
+  function buildBeerRef(item){
+    var block = h("div", {class:"item-block"});
+    block.appendChild(h("div", {class:"item-head"}, [h("h3", {text:item.name})]));
+    var row = h("div", {class:"ref-row ref-row--pair"});
+    var col1 = h("div", {});
+    col1.appendChild(h("label", {class:"f-label", for:"ref-beer-"+item.key+"-empty", text:"Empty keg (kg)"}));
+    var r1 = refField("ref-beer-"+item.key+"-empty", REFS.beer[item.key].empty, "kg", function(v){ REFS.beer[item.key].empty = v; scheduleSaveRefs(); });
+    col1.appendChild(r1.field);
+    var col2 = h("div", {});
+    col2.appendChild(h("label", {class:"f-label", for:"ref-beer-"+item.key+"-full", text:"Full keg (kg)"}));
+    var r2 = refField("ref-beer-"+item.key+"-full", REFS.beer[item.key].full, "kg", function(v){ REFS.beer[item.key].full = v; scheduleSaveRefs(); });
+    col2.appendChild(r2.field);
+    row.appendChild(col1); row.appendChild(col2);
+    block.appendChild(row);
+    return block;
+  }
+
+  function buildSpiritRef(item){
+    var block = h("div", {class:"item-block"});
+    block.appendChild(h("div", {class:"item-head"}, [h("h3", {text:item.name})]));
+    SIZES.forEach(function(s){
+      var row = h("div", {class:"ref-row--size"});
+      row.appendChild(h("span", {class:"size-chip", text:s.label}));
+      var r1 = refField("ref-spirit-"+item.key+"-"+s.slug+"-empty", REFS.spirits[item.key][s.value].empty, "empty (kg)", function(v){
+        REFS.spirits[item.key][s.value].empty = v; scheduleSaveRefs();
+      });
+      var r2 = refField("ref-spirit-"+item.key+"-"+s.slug+"-full", REFS.spirits[item.key][s.value].full, "full (kg)", function(v){
+        REFS.spirits[item.key][s.value].full = v; scheduleSaveRefs();
+      });
+      row.appendChild(r1.field);
+      row.appendChild(r2.field);
+      block.appendChild(row);
+    });
+    return block;
+  }
+
+  function buildRefCategory(title, tagText, cls, items, builderFn){
+    var card = h("div", {class:"cat-card " + cls});
+    var head = h("div", {class:"cat-head"});
+    head.appendChild(h("h2", {text:title}));
+    head.appendChild(h("span", {class:"cat-tag", text:tagText}));
+    card.appendChild(head);
+    var list = h("div", {class:"item-list"});
+    items.forEach(function(item){ list.appendChild(builderFn(item)); });
+    card.appendChild(list);
+    catsSetupEl.appendChild(card);
+  }
+
+  function renderSetupCategories(){
+    catsSetupEl.innerHTML = "";
+    buildRefCategory("Fresh Garnish", "REFERENCE", "cat-card--garnish", GARNISH_ITEMS, buildGarnishRef);
+    buildRefCategory("Keg Beer", "REFERENCE", "cat-card--beer", BEER_ITEMS, buildBeerRef);
+    buildRefCategory("Alcohol List Check", "REFERENCE", "cat-card--spirit", SPIRIT_ITEMS, buildSpiritRef);
+  }
+  renderSetupCategories();
+
+  function renderSetupValues(){
+    // Re-render only if the user isn't actively typing in a setup field.
+    if (setupContent.contains(document.activeElement) && document.activeElement.tagName === "INPUT") return;
+    renderSetupCategories();
+  }
+
+  /* =========================================================
+     SETUP — general info + meta strip
+     ========================================================= */
+  var elLoc = document.getElementById("s-location");
+  var elDate = document.getElementById("s-date");
+  var elResp = document.getElementById("s-responsible");
+  var metaLoc = document.getElementById("meta-location");
+  var metaDate = document.getElementById("meta-date");
+  var metaResp = document.getElementById("meta-resp");
+
+  function formatDate(iso){
+    if (!iso) return "No date set";
+    var parts = iso.split("-");
+    return parts.length === 3 ? (parts[1] + "/" + parts[2] + "/" + parts[0]) : iso;
+  }
+  function refreshMeta(){
+    metaLoc.textContent = elLoc.value.trim() || "No location set";
+    metaDate.textContent = formatDate(elDate.value);
+    metaResp.textContent = elResp.value.trim() ? ("Responsible: " + elResp.value.trim()) : "No responsible set";
+  }
+  [elLoc, elDate, elResp].forEach(function(el){ el.addEventListener("input", function(){ refreshMeta(); saveDraft(); }); });
+  document.getElementById("s-shift").addEventListener("input", saveDraft);
+  document.getElementById("s-notes").addEventListener("input", saveDraft);
+  if (!elDate.value) elDate.value = new Date().toISOString().slice(0,10);
+  refreshMeta();
+
+  /* =========================================================
+     CALCULATION
+     ========================================================= */
+  function sumBoxItem(item){
+    var block = catsReportEl.querySelector('[data-item-key="' + item.key + '"]');
+    var total = 0;
+    block.querySelectorAll(".input-kg").forEach(function(inp){ total += parseFloat(inp.value) || 0; });
+    return total;
+  }
+
+  function beerVolumeForRow(currentWeight, ref){
+    var capacity = (ref.full || 0) - (ref.empty || 0);
+    if (currentWeight <= 0) return {volume:0, calibrated:true};
+    if (capacity > 0){
+      var liquid = currentWeight - (ref.empty || 0);
+      var fraction = clamp(liquid / capacity, 0, 1);
+      return {volume: fraction * capacity, calibrated:true};
+    }
+    if (ref.empty > 0){
+      return {volume: Math.max(currentWeight - ref.empty, 0), calibrated:false};
+    }
+    return {volume: currentWeight / DENSITY_KG_PER_L, calibrated:false};
+  }
+
+  function calcBeerItem(item){
+    var block = catsReportEl.querySelector('[data-item-key="' + item.key + '"]');
+    var ref = REFS.beer[item.key] || {empty:0, full:0};
+    var total = 0, calibrated = true, anyWeight = false;
+    block.querySelectorAll(".input-kg").forEach(function(inp){
+      var w = parseFloat(inp.value) || 0;
+      if (w > 0) anyWeight = true;
+      var r = beerVolumeForRow(w, ref);
+      total += r.volume;
+      if (!r.calibrated) calibrated = false;
+    });
+    return {name:item.name, value: total, unit:"L", flagged: anyWeight && !calibrated};
+  }
+
+  function calcSpiritItem(item){
+    var block = catsReportEl.querySelector('[data-item-key="' + item.key + '"]');
+    var total = 0, flagged = false;
+    block.querySelectorAll(".entry-row--spirit").forEach(function(row){
+      var sizeVal = row.querySelector(".input-size").value;
+      var sizeLiters = parseFloat(sizeVal) || 0;
+      var count = parseFloat(row.querySelector(".input-closed-count").value) || 0;
+      var openWeight = parseFloat(row.querySelector(".input-open-kg").value) || 0;
+      total += count * sizeLiters;
+      if (openWeight > 0){
+        var ref = (REFS.spirits[item.key] && REFS.spirits[item.key][sizeVal]) || {empty:0, full:0};
+        var capacity = (ref.full || 0) - (ref.empty || 0);
+        if (capacity > 0){
+          var liquid = openWeight - (ref.empty || 0);
+          var fraction = clamp(liquid / capacity, 0, 1);
+          total += fraction * sizeLiters;
+        } else {
+          flagged = true;
+        }
+      }
+    });
+    return {name:item.name, value: total, unit:"L", flagged: flagged};
+  }
+
+  var lastResults = null;
+
+  function buildResultRow(row){
+    var rEl = h("div", {class:"result-row"});
+    var nameWrap = h("span", {});
+    nameWrap.appendChild(document.createTextNode(row.name));
+    if (row.flagged) nameWrap.appendChild(h("span", {class:"flag", text:"Set reference weights in Setup for an exact value"}));
+    rEl.appendChild(nameWrap);
+    var v = h("span", {class:"rv"});
+    v.textContent = fmt(row.value) + " " + row.unit;
+    rEl.appendChild(v);
+    return rEl;
+  }
+
+  function buildResultCard(title, dotClass, rows){
+    var card = h("div", {class:"result-card"});
+    var head = h("h2", {});
+    head.appendChild(h("span", {class:"dot " + dotClass}));
+    head.appendChild(document.createTextNode(title));
+    card.appendChild(head);
+    rows.forEach(function(row){ card.appendChild(buildResultRow(row)); });
+    return card;
+  }
+
+  function calcAll(){
+    var garnishRows = GARNISH_ITEMS.map(function(item){
+      var kg = sumBoxItem(item);
+      var ref = REFS.garnish[item.key].full || 0;
+      var name = item.name + (ref > 0 ? " (≈ " + fmt(kg/ref) + " boxes)" : "");
+      return {name:name, value:kg, unit:"kg", flagged:false};
+    });
+    var beerRows = BEER_ITEMS.map(calcBeerItem);
+    var spiritRows = SPIRIT_ITEMS.map(calcSpiritItem);
+
+    lastResults = {garnish:garnishRows, beer:beerRows, spirits:spiritRows};
+
+    var results = document.getElementById("results");
+    results.innerHTML = "";
+    results.appendChild(buildResultCard("Fresh Garnish", "dot--garnish", garnishRows));
+    results.appendChild(buildResultCard("Keg Beer", "dot--beer", beerRows));
+    results.appendChild(buildResultCard("Alcohol List Check", "dot--spirit", spiritRows));
+
+    var exportWrap = h("div", {class:"export-wrap"});
+    exportWrap.appendChild(h("button", {type:"button", class:"btn-export", id:"btn-export", text:"Export Excel"}));
+    exportWrap.appendChild(h("p", {class:"export-hint", text:"Downloads a workbook with one sheet per category."}));
+    results.appendChild(exportWrap);
+    document.getElementById("btn-export").addEventListener("click", exportExcel);
+
+    results.hidden = false;
+    results.scrollIntoView({behavior:"smooth", block:"start"});
+    showToast("Calculation updated");
+    saveDraft();
+  }
+
+  document.getElementById("btn-calc").addEventListener("click", calcAll);
+
+  document.getElementById("btn-reset").addEventListener("click", function(){
+    catsReportEl.querySelectorAll(".item-block").forEach(function(block){
+      var rowsEl = block.querySelector("[data-rows]");
+      rowsEl.innerHTML = "";
+      var key = block.dataset.itemKey, kind = block.dataset.kind, label = block.dataset.label;
+      var row = kind === "spirit" ? spiritRow(key, label) : boxRow(key, label);
+      rowsEl.appendChild(row);
+      renumber(rowsEl, label);
+    });
+    var results = document.getElementById("results");
+    results.hidden = true;
+    results.innerHTML = "";
+    lastResults = null;
+    showToast("Report reset");
+    saveDraft();
+  });
+
+  /* =========================================================
+     EXPORT TO EXCEL
+     ========================================================= */
+  function browserDownload(filename, blob){
+    try{
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      showToast("Excel file downloaded");
+    }catch(e){
+      showToast("Could not download the file");
+    }
+  }
+
+  function exportExcel(){
+    if (!lastResults || typeof XLSX === "undefined") return;
+    var wb = XLSX.utils.book_new();
+    function sheetFrom(rows){
+      var aoa = [["Item", "Volume"]];
+      rows.forEach(function(r){ aoa.push([r.name, fmt(r.value) + " " + r.unit]); });
+      return XLSX.utils.aoa_to_sheet(aoa);
+    }
+    XLSX.utils.book_append_sheet(wb, sheetFrom(lastResults.garnish), "Fresh Garnish");
+    XLSX.utils.book_append_sheet(wb, sheetFrom(lastResults.beer), "Keg Beer");
+    XLSX.utils.book_append_sheet(wb, sheetFrom(lastResults.spirits), "Alcohol List Check");
+
+    var wbout = XLSX.write(wb, {bookType:"xlsx", type:"array"});
+    var blob = new Blob([wbout], {type:"application/octet-stream"});
+    var filename = "receiving-tool-" + (elDate.value || "report") + ".xlsx";
+
+    if (downloadsCap){
+      downloadsCap.save({filename:filename, data:blob}).catch(function(){ browserDownload(filename, blob); });
+    } else {
+      browserDownload(filename, blob);
+    }
+  }
+
+  /* =========================================================
+     TOAST
+     ========================================================= */
+  function showToast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(showToast._tm);
+    showToast._tm = setTimeout(function(){ t.classList.remove("show"); }, 1800);
+  }
+
+  /* =========================================================
+     DRAFT AUTOSAVE (report entries — per-browser convenience)
+     ========================================================= */
+  var DRAFT_KEY = "receiving-tool-draft-v1";
+  var saveTimer = null;
+
+  function serialize(){
+    var state = {
+      setup: {
+        location: elLoc.value, date: elDate.value, responsible: elResp.value,
+        shift: document.getElementById("s-shift").value, notes: document.getElementById("s-notes").value
+      },
+      box: {}, spirit: {}
+    };
+    catsReportEl.querySelectorAll('.item-block[data-kind="box"]').forEach(function(block){
+      var vals = [];
+      block.querySelectorAll(".input-kg").forEach(function(inp){ vals.push(inp.value); });
+      state.box[block.dataset.itemKey] = vals;
+    });
+    catsReportEl.querySelectorAll('.item-block[data-kind="spirit"]').forEach(function(block){
+      var rows = [];
+      block.querySelectorAll(".entry-row--spirit").forEach(function(row){
+        rows.push({
+          size: row.querySelector(".input-size").value,
+          openKg: row.querySelector(".input-open-kg").value,
+          closed: row.querySelector(".input-closed-count").value
+        });
+      });
+      state.spirit[block.dataset.itemKey] = rows;
+    });
+    return state;
+  }
+
+  function saveDraft(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){
+      try{ localStorage.setItem(DRAFT_KEY, JSON.stringify(serialize())); }catch(e){}
+    }, 250);
+  }
+
+  function restoreDraft(){
+    var raw = null;
+    try{ raw = localStorage.getItem(DRAFT_KEY); }catch(e){ return; }
+    if (!raw) return;
+    var state;
+    try{ state = JSON.parse(raw); }catch(e){ return; }
+    if (!state) return;
+
+    if (state.setup){
+      elLoc.value = state.setup.location || "";
+      if (state.setup.date) elDate.value = state.setup.date;
+      elResp.value = state.setup.responsible || "";
+      document.getElementById("s-shift").value = state.setup.shift || "";
+      document.getElementById("s-notes").value = state.setup.notes || "";
+      refreshMeta();
+    }
+    if (state.box){
+      Object.keys(state.box).forEach(function(key){
+        var block = catsReportEl.querySelector('[data-item-key="' + key + '"]');
+        if (!block) return;
+        var rowsEl = block.querySelector("[data-rows]");
+        var label = block.dataset.label;
+        var vals = state.box[key];
+        if (!vals || !vals.length) return;
+        rowsEl.innerHTML = "";
+        vals.forEach(function(v){
+          var row = boxRow(key, label);
+          row.querySelector(".input-kg").value = v;
+          rowsEl.appendChild(row);
+        });
+        renumber(rowsEl, label);
+      });
+    }
+    if (state.spirit){
+      Object.keys(state.spirit).forEach(function(key){
+        var block = catsReportEl.querySelector('[data-item-key="' + key + '"]');
+        if (!block) return;
+        var rowsEl = block.querySelector("[data-rows]");
+        var label = block.dataset.label;
+        var rows = state.spirit[key];
+        if (!rows || !rows.length) return;
+        rowsEl.innerHTML = "";
+        rows.forEach(function(r){
+          var row = spiritRow(key, label);
+          row.querySelector(".input-size").value = r.size || "0.75";
+          row.querySelector(".input-open-kg").value = r.openKg || "";
+          row.querySelector(".input-closed-count").value = r.closed || "";
+          rowsEl.appendChild(row);
+        });
+        renumber(rowsEl, label);
+      });
+    }
+  }
+  restoreDraft();
+
+  /* =========================================================
+     CAPABILITIES: db (shared reference weights) + downloads
+     ========================================================= */
+  async function initCapabilities(){
+    try{
+      if (window.claude && typeof window.claude.use === "function"){
+        dbCap = await window.claude.use("db");
+        downloadsCap = await window.claude.use("downloads");
+      }
+    }catch(e){ dbCap = null; downloadsCap = null; }
+
+    if (dbCap){
+      setStorageStatus("Reference weights sync automatically across every device that opens this tool.");
+      try{
+        dbCap.doc("settings/refs").onSnapshot(function(snap){
+          if (snap.exists){
+            mergeRefs(snap.data());
+            renderSetupValues();
+          }
+        }, function(){ /* keep local values on subscription error */ });
+      }catch(e){}
+    } else {
+      loadRefsLocal();
+      renderSetupValues();
+      setStorageStatus("Reference weights are saved in this browser only.");
+    }
+  }
+  initCapabilities();
+})();
+</script>
+</body>
+</html>
