@@ -119,6 +119,8 @@
     font-size:12.5px; padding:6px 10px; border-radius:7px; cursor:pointer; white-space:nowrap;
   }
   .add-btn:hover{background:var(--surface-2);}
+  .area-btns{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 10px;}
+  .add-btn--area{font-size:11.5px; padding:5px 9px;}
 
   .rows{display:flex; flex-direction:column; gap:8px;}
   .entry-row{ display:grid; grid-template-columns:64px 1fr 28px; align-items:center; gap:8px; }
@@ -134,10 +136,8 @@
   }
   .field input::placeholder{color:var(--muted); font-weight:400;}
   .field .unit{font-size:11px; color:var(--muted); white-space:nowrap; padding-left:4px;}
-  .field--multi .count-sub{
-    flex:0 0 34px; width:34px; min-width:34px; text-align:center; padding:9px 2px;
-    border-left:1px solid var(--border); margin-left:6px;
-  }
+  .open-count-wrap{margin-top:6px; max-width:140px;}
+  .sub-field-label{display:block; font-size:10px; color:var(--muted); margin-bottom:4px;}
 
   /* ---- alcohol: stacked open/full bottle groups ---- */
   .entry-row.bottle-group{
@@ -346,6 +346,20 @@
     {value:"1.14", label:"1.14 L", slug:"1_14"},
     {value:"1.75", label:"1.75 L", slug:"1_75"}
   ];
+  // Alcohol List Check counts are broken down by physical area instead of
+  // a generic "Bottle N" list. H Bar is the main area (the default row);
+  // the other four are added on demand with their own buttons.
+  var ALCOHOL_AREAS = [
+    {key:"hbar", name:"H Bar"},
+    {key:"gbar", name:"G Bar"},
+    {key:"mbar", name:"M Bar"},
+    {key:"prep", name:"Prep"},
+    {key:"ccan", name:"CCAN"}
+  ];
+  function areaNameFor(areaKey){
+    var found = ALCOHOL_AREAS.filter(function(a){ return a.key === areaKey; })[0];
+    return found ? found.name : areaKey;
+  }
 
   function h(tag, attrs, children){
     var el = document.createElement(tag);
@@ -547,16 +561,24 @@
   }
 
   function openWeightField(itemKey, n, label, weightAriaSuffix){
-    var openField = h("div", {class:"field field--multi"});
+    var openField = h("div", {class:"field"});
     var openInput = h("input", {type:"number", inputmode:"decimal", step:"0.01", min:"0",
       class:"input-open-kg", "aria-label":label + " " + n + " " + weightAriaSuffix, placeholder:"0.00", id: itemKey+"-openkg-"+n});
     openField.appendChild(openInput);
-    openField.appendChild(h("span", {class:"unit", text:"kg for"}));
-    var countInput = h("input", {type:"number", inputmode:"numeric", step:"1", min:"1",
-      class:"input-open-count count-sub", "aria-label":label + " " + n + ", how many bottles were weighed together", placeholder:"1", id: itemKey+"-opencount-"+n});
-    openField.appendChild(countInput);
-    openField.appendChild(h("span", {class:"unit", text:"btl"}));
+    openField.appendChild(h("span", {class:"unit", text:"kg"}));
     return openField;
+  }
+
+  function openCountField(itemKey, n, label){
+    var wrap = h("div", {class:"open-count-wrap"});
+    wrap.appendChild(h("label", {class:"sub-field-label", for:itemKey+"-opencount-"+n, text:"Bottles weighed together"}));
+    var field = h("div", {class:"field"});
+    var countInput = h("input", {type:"number", inputmode:"numeric", step:"1", min:"1",
+      class:"input-open-count", "aria-label":label + " " + n + ", how many bottles were weighed together", placeholder:"1", id: itemKey+"-opencount-"+n});
+    field.appendChild(countInput);
+    field.appendChild(h("span", {class:"unit", text:"btl"}));
+    wrap.appendChild(field);
+    return wrap;
   }
 
   function sizeSelect(cls, id, ariaLabel){
@@ -565,41 +587,68 @@
     return select;
   }
 
-  function spiritRow(itemKey, label){
-    var n = (rowCounters[itemKey] = (rowCounters[itemKey]||0) + 1);
-    var row = h("div", {class:"entry-row bottle-group", "data-row":"1"});
+  function spiritRow(itemKey, areaKey){
+    var areaName = areaNameFor(areaKey);
+    var counterKey = itemKey + "__" + areaKey;
+    var n = (rowCounters[counterKey] = (rowCounters[counterKey]||0) + 1);
+    var displayLabel = areaName + (n > 1 ? " " + n : "");
+    var idKey = itemKey + "-" + areaKey;
+    var row = h("div", {class:"entry-row bottle-group", "data-row":"1", "data-area":areaKey});
 
     var head = h("div", {class:"bottle-group-head"});
-    head.appendChild(h("span", {class:"entry-index", text:label + " " + n}));
-    head.appendChild(h("button", {type:"button", class:"row-remove", "data-remove":"1", "aria-label":"Remove " + label.toLowerCase() + " " + n, text:"×"}));
+    head.appendChild(h("span", {class:"entry-index", text:displayLabel}));
+    head.appendChild(h("button", {type:"button", class:"row-remove", "data-remove":"1", "aria-label":"Remove " + displayLabel.toLowerCase(), text:"×"}));
     row.appendChild(head);
 
     var openSub = h("div", {class:"bottle-sub"});
     openSub.appendChild(h("span", {class:"bottle-sub-label", text:"Open bottles"}));
     var openRow = h("div", {class:"bottle-sub-row"});
-    var openSizeSel = sizeSelect("input-open-size", itemKey+"-opensize-"+n, "Size of open " + label.toLowerCase() + " " + n);
+    var openSizeSel = sizeSelect("input-open-size", idKey+"-opensize-"+n, "Size of open " + displayLabel.toLowerCase() + " bottle");
     openSizeSel.value = bestOpenSizeFor(itemKey);
     openRow.appendChild(openSizeSel);
-    openRow.appendChild(openWeightField(itemKey, n, label, "open bottles, combined weight on the scale"));
+    openRow.appendChild(openWeightField(idKey, n, displayLabel, "open bottles, combined weight on the scale"));
     openSub.appendChild(openRow);
+    openSub.appendChild(openCountField(idKey, n, displayLabel));
     openSub.appendChild(h("span", {class:"config-missing", text:"Missing configuration for this size — set it up in Setup"}));
     row.appendChild(openSub);
 
     var closedSub = h("div", {class:"bottle-sub"});
     closedSub.appendChild(h("span", {class:"bottle-sub-label", text:"Full bottles"}));
     var closedRow = h("div", {class:"bottle-sub-row"});
-    closedRow.appendChild(sizeSelect("input-closed-size", itemKey+"-closedsize-"+n, "Size of full " + label.toLowerCase() + " " + n));
+    closedRow.appendChild(sizeSelect("input-closed-size", idKey+"-closedsize-"+n, "Size of full " + displayLabel.toLowerCase() + " bottle"));
     var closedField = h("div", {class:"field"});
     var closedInput = h("input", {type:"number", inputmode:"numeric", step:"1", min:"0",
-      class:"input-closed-count", "aria-label":label + " " + n + " full unopened bottles", placeholder:"0", id: itemKey+"-closed-"+n});
+      class:"input-closed-count", "aria-label":displayLabel + " full unopened bottles", placeholder:"0", id: idKey+"-closed-"+n});
     closedField.appendChild(closedInput);
     closedField.appendChild(h("span", {class:"unit", text:"bottles"}));
     closedRow.appendChild(closedField);
     closedSub.appendChild(closedRow);
     row.appendChild(closedSub);
 
-    updateSpiritOpenAvailability(openSizeSel);
+    applySpiritOpenAvailability(row, itemKey, openSizeSel);
     return row;
+  }
+
+  function renumberSpiritRows(rowsEl){
+    var counts = {};
+    var rows = rowsEl.querySelectorAll(".entry-row");
+    rows.forEach(function(r){
+      var areaKey = r.dataset.area || "hbar";
+      counts[areaKey] = (counts[areaKey] || 0) + 1;
+      var displayLabel = areaNameFor(areaKey) + (counts[areaKey] > 1 ? " " + counts[areaKey] : "");
+      r.querySelector(".entry-index").textContent = displayLabel;
+      var rb = r.querySelector(".row-remove");
+      if (rb){ rb.hidden = false; rb.setAttribute("aria-label", "Remove " + displayLabel.toLowerCase()); }
+    });
+  }
+
+  function buildAreaButtons(itemKey){
+    var wrap = h("div", {class:"area-btns"});
+    ALCOHOL_AREAS.forEach(function(area){
+      wrap.appendChild(h("button", {type:"button", class:"add-btn add-btn--area",
+        "data-add-area":area.key, "aria-label":"Add " + area.name + " count", text:"+ " + area.name}));
+    });
+    return wrap;
   }
 
   function renumber(rowsEl, label){
@@ -611,8 +660,10 @@
     });
   }
 
+  // spiritRow has its own (itemKey, areaKey) signature and its own
+  // renumbering/add-buttons — it is special-cased below, not part of
+  // this generic factory.
   function rowFactory(kind){
-    if (kind === "spirit") return spiritRow;
     if (kind === "eabox") return eaBoxRow;
     if (kind === "bag") return bagRow;
     if (kind === "eacount") return eaCountRow;
@@ -626,14 +677,20 @@
     var block = h("div", {class:"item-block", "data-item-key":item.key, "data-kind":kind, "data-label":label});
     var head = h("div", {class:"item-head"});
     head.appendChild(h("h3", {text:item.name}));
-    head.appendChild(h("button", {type:"button", class:"add-btn", "data-add":"1", text:addText}));
+    if (kind !== "spirit") head.appendChild(h("button", {type:"button", class:"add-btn", "data-add":"1", text:addText}));
     block.appendChild(head);
+    if (kind === "spirit") block.appendChild(buildAreaButtons(item.key));
     if (item.hint) block.appendChild(h("p", {class:"item-hint", text:item.hint}));
     var rowsEl = h("div", {class:"rows", "data-rows":"1"});
     block.appendChild(rowsEl);
-    var rowFn = rowFactory(kind);
-    rowsEl.appendChild(rowFn(item.key, label));
-    renumber(rowsEl, label);
+    if (kind === "spirit"){
+      rowsEl.appendChild(spiritRow(item.key, ALCOHOL_AREAS[0].key));
+      renumberSpiritRows(rowsEl);
+    } else {
+      var rowFn = rowFactory(kind);
+      rowsEl.appendChild(rowFn(item.key, label));
+      renumber(rowsEl, label);
+    }
     return block;
   }
 
@@ -655,6 +712,17 @@
   buildCategory(catsReportEl, "Keg Beer", "L", "cat-card--beer", BEER_ITEMS, "box", "Keg", "+ Add keg");
 
   catsReportEl.addEventListener("click", function(e){
+    var addAreaBtn = e.target.closest("[data-add-area]");
+    if (addAreaBtn){
+      var areaBlock = addAreaBtn.closest(".item-block");
+      var areaRowsEl = areaBlock.querySelector("[data-rows]");
+      var areaItemKey = areaBlock.dataset.itemKey;
+      var areaRow = spiritRow(areaItemKey, addAreaBtn.dataset.addArea);
+      areaRowsEl.appendChild(areaRow);
+      renumberSpiritRows(areaRowsEl);
+      saveDraft();
+      return;
+    }
     var addBtn = e.target.closest("[data-add]");
     if (addBtn){
       var block = addBtn.closest(".item-block");
@@ -672,9 +740,14 @@
     var rmBtn = e.target.closest("[data-remove]");
     if (rmBtn){
       var rowsEl2 = rmBtn.closest("[data-rows]");
-      if (rowsEl2.querySelectorAll(".entry-row").length > 1){
+      var itemBlock2 = rowsEl2.closest(".item-block");
+      if (itemBlock2.dataset.kind === "spirit"){
         rmBtn.closest(".entry-row").remove();
-        renumber(rowsEl2, rowsEl2.closest(".item-block").dataset.label);
+        renumberSpiritRows(rowsEl2);
+        saveDraft();
+      } else if (rowsEl2.querySelectorAll(".entry-row").length > 1){
+        rmBtn.closest(".entry-row").remove();
+        renumber(rowsEl2, itemBlock2.dataset.label);
         saveDraft();
       }
     }
@@ -794,11 +867,7 @@
     return SIZES[0].value;
   }
 
-  function updateSpiritOpenAvailability(selectEl){
-    var row = selectEl.closest(".bottle-group");
-    var itemBlock = selectEl.closest(".item-block");
-    if (!row || !itemBlock) return;
-    var itemKey = itemBlock.dataset.itemKey;
+  function applySpiritOpenAvailability(row, itemKey, selectEl){
     var size = selectEl.value;
     var ref = (REFS.spirits[itemKey] && REFS.spirits[itemKey][size]) || {empty:0, full:0};
     var ok = hasRef(ref);
@@ -811,6 +880,17 @@
     countInput.placeholder = ok ? "1" : "—";
     if (!ok){ kgInput.value = ""; countInput.value = ""; }
     if (msg) msg.hidden = ok;
+  }
+
+  // Works from an element already in the live document (e.g. the user
+  // changing the size dropdown): it looks up its own row/item ancestors.
+  // Freshly built rows aren't attached yet when spiritRow() runs, so they
+  // call applySpiritOpenAvailability() directly instead (see spiritRow).
+  function updateSpiritOpenAvailability(selectEl){
+    var row = selectEl.closest(".bottle-group");
+    var itemBlock = selectEl.closest(".item-block");
+    if (!row || !itemBlock) return;
+    applySpiritOpenAvailability(row, itemBlock.dataset.itemKey, selectEl);
   }
 
   function refreshAllSpiritAvailability(){
@@ -1034,9 +1114,14 @@
       var rowsEl = block.querySelector("[data-rows]");
       rowsEl.innerHTML = "";
       var key = block.dataset.itemKey, kind = block.dataset.kind, label = block.dataset.label;
-      var rowFn = rowFactory(kind);
-      rowsEl.appendChild(rowFn(key, label));
-      renumber(rowsEl, label);
+      if (kind === "spirit"){
+        rowsEl.appendChild(spiritRow(key, ALCOHOL_AREAS[0].key));
+        renumberSpiritRows(rowsEl);
+      } else {
+        var rowFn = rowFactory(kind);
+        rowsEl.appendChild(rowFn(key, label));
+        renumber(rowsEl, label);
+      }
     });
     refreshReportAvailability();
     var results = document.getElementById("results");
@@ -1104,7 +1189,7 @@
   /* =========================================================
      DRAFT AUTOSAVE (report entries — per-browser convenience)
      ========================================================= */
-  var DRAFT_KEY = "receiving-tool-draft-v3";
+  var DRAFT_KEY = "receiving-tool-draft-v4";
   var saveTimer = null;
 
   function serialize(){
@@ -1144,6 +1229,7 @@
       var rows = [];
       block.querySelectorAll(".bottle-group").forEach(function(row){
         rows.push({
+          area: row.dataset.area || "hbar",
           openSize: row.querySelector(".input-open-size").value,
           openKg: row.querySelector(".input-open-kg").value,
           openCount: row.querySelector(".input-open-count").value,
@@ -1250,12 +1336,11 @@
         var block = catsReportEl.querySelector('[data-item-key="' + key + '"]');
         if (!block) return;
         var rowsEl = block.querySelector("[data-rows]");
-        var label = block.dataset.label;
         var rows = state.spirit[key];
         if (!rows || !rows.length) return;
         rowsEl.innerHTML = "";
         rows.forEach(function(r){
-          var row = spiritRow(key, label);
+          var row = spiritRow(key, r.area || "hbar");
           row.querySelector(".input-open-size").value = r.openSize || "0.75";
           row.querySelector(".input-open-kg").value = r.openKg || "";
           row.querySelector(".input-open-count").value = r.openCount || "";
@@ -1263,7 +1348,7 @@
           row.querySelector(".input-closed-count").value = r.closed || "";
           rowsEl.appendChild(row);
         });
-        renumber(rowsEl, label);
+        renumberSpiritRows(rowsEl);
       });
     }
   }
