@@ -187,6 +187,7 @@
     padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--ink);
   }
   .field-block textarea{resize:vertical; min-height:64px;}
+  .counter-block{margin-bottom:14px;}
   @media (max-width:480px){ .setup-grid{grid-template-columns:1fr;} }
 
   .status-note{
@@ -273,6 +274,10 @@
 
 <main>
   <section id="panel-report">
+    <div class="field-block counter-block">
+      <label class="f-label" for="r-counter">Counted by</label>
+      <input id="r-counter" type="text" placeholder="Name of the person counting">
+    </div>
     <div class="meta-strip">
       <span><strong id="meta-location">No location set</strong></span>
       <span id="meta-date">No date set</span>
@@ -773,6 +778,8 @@
   var elLoc = document.getElementById("s-location");
   var elDate = document.getElementById("s-date");
   var elResp = document.getElementById("s-responsible");
+  var elCounter = document.getElementById("r-counter");
+  elCounter.addEventListener("input", saveDraft);
   var metaLoc = document.getElementById("meta-location");
   var metaDate = document.getElementById("meta-date");
   var metaResp = document.getElementById("meta-resp");
@@ -1025,7 +1032,8 @@
     var state = {
       setup: {
         location: elLoc.value, date: elDate.value, responsible: elResp.value,
-        shift: document.getElementById("s-shift").value, notes: document.getElementById("s-notes").value
+        shift: document.getElementById("s-shift").value, notes: document.getElementById("s-notes").value,
+        counter: elCounter.value
       },
       box: {}, spirit: {}, juice: {}
     };
@@ -1082,6 +1090,7 @@
       elResp.value = state.setup.responsible || "";
       document.getElementById("s-shift").value = state.setup.shift || "";
       document.getElementById("s-notes").value = state.setup.notes || "";
+      elCounter.value = state.setup.counter || "";
       refreshMeta();
     }
     if (state.box){
