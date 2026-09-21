@@ -58,6 +58,7 @@
   h1,h2,h3{font-family:'Oswald',system-ui,sans-serif; text-transform:uppercase; letter-spacing:.02em; margin:0;}
   input,select,button{font-family:inherit; font-size:15px;}
   input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  input:disabled{opacity:.5; cursor:not-allowed;}
 
   .topbar{
     position:sticky; top:env(safe-area-inset-top,0px); background:var(--bg);
@@ -112,6 +113,7 @@
   .item-block:last-child{border-bottom:none;}
   .item-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;}
   .item-head h3{font-size:13.5px; letter-spacing:.01em;}
+  .item-hint{font-size:11px; color:var(--muted); line-height:1.45; margin:-4px 0 8px;}
   .add-btn{
     border:1px dashed var(--border); background:transparent; color:var(--accent); font-weight:600;
     font-size:12.5px; padding:6px 10px; border-radius:7px; cursor:pointer; white-space:nowrap;
@@ -151,6 +153,11 @@
   }
   .bottle-sub-row{display:grid; grid-template-columns:84px 1fr; gap:8px; align-items:center;}
   @media (max-width:380px){ .bottle-sub-row{grid-template-columns:1fr;} }
+  .config-missing{
+    display:block; font-size:11px; font-weight:600; color:var(--danger);
+    background:var(--danger-soft); border-radius:7px; padding:6px 9px; margin-top:6px;
+  }
+  .config-missing[hidden]{display:none;}
   select.input-size{
     padding:9px 8px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2);
     color:var(--ink); font-weight:600; font-size:13px;
@@ -173,13 +180,15 @@
   /* ---- setup: reference fields ---- */
   .ref-row{display:grid; grid-template-columns:1fr; gap:8px;}
   .ref-row--pair{grid-template-columns:1fr 1fr;}
+  .ref-row--trio{grid-template-columns:1fr 1fr 1fr;}
+  @media (max-width:420px){ .ref-row--trio{grid-template-columns:1fr 1fr;} }
   .ref-row--size{display:grid; grid-template-columns:56px 1fr 1fr; align-items:center; gap:8px; margin-bottom:6px;}
   .ref-row--size:last-child{margin-bottom:0;}
   .size-chip{
     font-size:11.5px; font-weight:700; color:var(--muted); background:var(--surface-2);
     border:1px solid var(--border); border-radius:7px; padding:8px 6px; text-align:center;
   }
-  .setup-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;}
+  .setup-grid{display:grid; grid-template-columns:1fr; max-width:220px; gap:12px; margin-bottom:16px;}
   .field-block{display:flex; flex-direction:column; gap:6px;}
   .field-block.full{grid-column:1/-1;}
   label.f-label{font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;}
@@ -194,25 +203,6 @@
     margin-top:4px; margin-bottom:18px; padding:11px 14px; border-radius:10px;
     background:var(--surface-2); border:1px solid var(--border); color:var(--muted); font-size:12.5px; line-height:1.5;
   }
-
-  /* ---- setup lock ---- */
-  .lock-wrap{display:flex; justify-content:center; padding-top:24px;}
-  .lock-card{
-    background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow);
-    padding:24px 22px; max-width:340px; width:100%; text-align:center;
-  }
-  .lock-icon{
-    width:44px; height:44px; border-radius:10px; background:var(--spirit-soft); color:var(--spirit);
-    display:flex; align-items:center; justify-content:center; margin:0 auto 14px; font-size:20px;
-  }
-  .lock-card h2{font-size:16px; margin-bottom:6px;}
-  .lock-card p{color:var(--muted); font-size:13px; margin:0 0 16px; line-height:1.5;}
-  .lock-form{display:flex; flex-direction:column; gap:10px;}
-  .lock-form input{
-    padding:12px 14px; border-radius:9px; border:1px solid var(--border); background:var(--surface-2);
-    color:var(--ink); text-align:center; letter-spacing:.12em; font-weight:700; font-size:16px;
-  }
-  .lock-error{color:var(--danger); font-size:12.5px; min-height:16px; margin:0;}
 
   .action-bar{
     position:fixed; left:0; right:0; bottom:0; padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));
@@ -279,48 +269,17 @@
       <input id="r-counter" type="text" placeholder="Name of the person counting">
     </div>
     <div class="meta-strip">
-      <span><strong id="meta-location">No location set</strong></span>
       <span id="meta-date">No date set</span>
-      <span id="meta-resp">No responsible set</span>
     </div>
     <div id="categories-report"></div>
   </section>
 
   <section id="panel-setup" hidden>
-    <div id="setup-lock" class="lock-wrap">
-      <div class="lock-card">
-        <div class="lock-icon">&#128274;</div>
-        <h2>Setup is locked</h2>
-        <p>Enter the access code to edit reference weights and general information.</p>
-        <form class="lock-form" id="lock-form">
-          <input id="lock-input" type="password" inputmode="numeric" autocomplete="off" placeholder="Access code" aria-label="Access code">
-          <button type="submit" class="btn btn-primary">Unlock</button>
-          <p class="lock-error" id="lock-error"></p>
-        </form>
-      </div>
-    </div>
-
-    <div id="setup-content" hidden>
+    <div id="setup-content">
       <div class="setup-grid">
-        <div class="field-block">
-          <label class="f-label" for="s-location">Location</label>
-          <input id="s-location" type="text" placeholder="e.g. Main bar">
-        </div>
         <div class="field-block">
           <label class="f-label" for="s-date">Count date</label>
           <input id="s-date" type="date">
-        </div>
-        <div class="field-block">
-          <label class="f-label" for="s-responsible">Responsible</label>
-          <input id="s-responsible" type="text" placeholder="Name of the counter">
-        </div>
-        <div class="field-block">
-          <label class="f-label" for="s-shift">Shift</label>
-          <input id="s-shift" type="text" placeholder="e.g. Opening, closing...">
-        </div>
-        <div class="field-block full">
-          <label class="f-label" for="s-notes">Notes</label>
-          <textarea id="s-notes" placeholder="General notes about this count..."></textarea>
         </div>
       </div>
 
@@ -344,18 +303,17 @@
 (function(){
   "use strict";
 
-  // Change this to change the Setup access code.
-  var SETUP_ACCESS_CODE = "2026";
 
-  // Approximate density for spirits/beer used only when a reference
-  // weight is missing (fallback path). Real conversions use the
-  // empty/full reference weights entered in Setup instead.
+  // Approximate density for beer used only when a reference weight is
+  // missing (fallback path). Real conversions use the empty/full
+  // reference weights entered in Setup instead.
   var DENSITY_KG_PER_L = 0.95;
 
+  var GARNISH_HINT = "Check the keg fridge door — daily-use report sheet.";
   var GARNISH_ITEMS = [
-    {key:"lemon", name:"Lemon Fresh Box"},
-    {key:"lime",  name:"Lime Fresh Box"},
-    {key:"mint",  name:"Mint Fresh Box"}
+    {key:"lemon", name:"Lemon Fresh EA", kind:"eacount", label:"Report", addText:"+ Add report", hint:GARNISH_HINT},
+    {key:"lime",  name:"Lime Fresh EA",  kind:"eacount", label:"Report", addText:"+ Add report", hint:GARNISH_HINT},
+    {key:"mint",  name:"Mint Fresh Bag", kind:"bag", label:"Bag", addText:"+ Add bag"}
   ];
   var BEER_ITEMS = [
     {key:"stella",     name:"Stella"},
@@ -374,19 +332,19 @@
     {key:"naughtyneighbour", name:"Naughty Neighbour"}
   ];
   var SPIRIT_ITEMS = [
-    {key:"smirnoff", name:"Smirnoff Vodka"},
+    {key:"josetradicional", name:"Jose Tradicional"},
     {key:"ketelone", name:"Ketel One"},
     {key:"josegold", name:"Jose Gold"},
     {key:"tanqueray",name:"Tanqueray"}
   ];
   var JUICE_ITEMS = [
-    {key:"limejuice",  name:"Lime Juice"},
-    {key:"lemonjuice", name:"Lemon Juice"}
+    {key:"limejuice",  name:"Lime Juice",  kind:"eabox", label:"EA", addText:"+ Add EA"},
+    {key:"lemonjuice", name:"Lemon Juice", kind:"eabox", label:"EA", addText:"+ Add EA"}
   ];
   var SIZES = [
     {value:"0.75", label:"750 ml", slug:"0_75"},
-    {value:"1",    label:"1 L",    slug:"1"},
-    {value:"1.14", label:"1.14 L", slug:"1_14"}
+    {value:"1.14", label:"1.14 L", slug:"1_14"},
+    {value:"1.75", label:"1.75 L", slug:"1_75"}
   ];
 
   function h(tag, attrs, children){
@@ -404,25 +362,62 @@
   function fmt(n){
     return (Math.round((n||0) * 100) / 100).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
   }
+  function hasRef(ref){ return !!ref && ((ref.full || 0) - (ref.empty || 0)) > 0; }
+  function hasBeerRef(ref){ return hasRef(ref) && (ref.liters || 0) > 0; }
 
   /* =========================================================
      REFERENCE WEIGHTS (Setup) — shared via the db capability
      when available, otherwise saved to this browser only.
      ========================================================= */
   function defaultRefs(){
-    var garnish={}, beer={}, spirits={}, juices={};
-    GARNISH_ITEMS.forEach(function(i){ garnish[i.key] = {full:0}; });
-    BEER_ITEMS.forEach(function(i){ beer[i.key] = {empty:0, full:0}; });
+    var garnish={}, beer={}, spirits={};
+    GARNISH_ITEMS.forEach(function(i){ if (!i.kind || i.kind === "box") garnish[i.key] = {full:0}; });
+    BEER_ITEMS.forEach(function(i){ beer[i.key] = {empty:0, full:0, liters:0}; });
     SPIRIT_ITEMS.forEach(function(i){
       var sizes = {};
       SIZES.forEach(function(s){ sizes[s.value] = {empty:0, full:0}; });
       spirits[i.key] = sizes;
     });
-    JUICE_ITEMS.forEach(function(i){ juices[i.key] = {empty:0, full:0}; });
-    return {garnish:garnish, beer:beer, spirits:spirits, juices:juices};
+    // Factory-seeded reference weights (kg). Anything not listed here
+    // stays at 0/0 ("no reference") until someone fills it in on Setup.
+    var seed = {
+      josetradicional: { "0.75": {empty:0.63, full:1.34} },
+      josegold:        { "1.14": {empty:0.72, full:1.79}, "0.75": {empty:0.52, full:1.24} },
+      tanqueray:       { "1.14": {empty:0.65, full:1.73} },
+      ketelone:        { "1.14": {empty:0.68, full:1.76} }
+    };
+    Object.keys(seed).forEach(function(key){
+      if (!spirits[key]) return;
+      Object.keys(seed[key]).forEach(function(size){
+        if (spirits[key][size]) spirits[key][size] = seed[key][size];
+      });
+    });
+    // Factory-seeded keg reference weights (kg) plus each keg's actual
+    // full volume in liters — kegs of the same kg capacity can hold very
+    // different volumes, so liters must be set per keg, not derived from kg.
+    var beerSeed = {
+      asahi:            {empty:4.71,  full:23.8, liters:20},
+      bellweiser:       {empty:9.06,  full:38.5, liters:30},
+      corona:           {empty:14.44, full:73.1, liters:58.6},
+      juicyass:         {empty:7.79,  full:38.6, liters:30},
+      gooseisland:      {empty:14.4,  full:73.4, liters:58.6},
+      guinness:         {empty:12.04, full:62.2, liters:50},
+      jellyking:        {empty:9.05,  full:38.6, liters:30},
+      kronemburg:       {empty:14.4,  full:74,   liters:58.6},
+      michelob:         {empty:14.25, full:72.8, liters:58.6},
+      modelo:           {empty:14.45, full:74.4, liters:58.6},
+      naughtyneighbour: {empty:14.4,  full:74,   liters:58.6},
+      nobaddaze:        {empty:14.4,  full:73.3, liters:58.6},
+      partydad:         {empty:14.4,  full:74,   liters:58.6},
+      stella:           {empty:14.15, full:73.3, liters:58.6}
+    };
+    Object.keys(beerSeed).forEach(function(key){
+      if (beer[key]) beer[key] = beerSeed[key];
+    });
+    return {garnish:garnish, beer:beer, spirits:spirits};
   }
   var REFS = defaultRefs();
-  var REFS_LOCAL_KEY = "receiving-tool-refs-v1";
+  var REFS_LOCAL_KEY = "receiving-tool-refs-v2";
   var dbCap = null, downloadsCap = null;
 
   function mergeRefs(data){
@@ -432,7 +427,6 @@
     if (data.spirits) for (var s in data.spirits) if (REFS.spirits[s]) {
       for (var sz in data.spirits[s]) if (REFS.spirits[s][sz]) REFS.spirits[s][sz] = Object.assign({}, REFS.spirits[s][sz], data.spirits[s][sz]);
     }
-    if (data.juices) for (var j in data.juices) if (REFS.juices[j]) REFS.juices[j] = Object.assign({}, REFS.juices[j], data.juices[j]);
   }
   function saveRefsLocal(){
     try{ localStorage.setItem(REFS_LOCAL_KEY, JSON.stringify(REFS)); }catch(e){}
@@ -453,6 +447,7 @@
         dbCap.doc("settings/refs").set(REFS).catch(function(){ /* local copy already saved */ });
       }
     }, 500);
+    refreshReportAvailability();
   }
 
   function setStorageStatus(text){
@@ -478,39 +473,10 @@
   tabReport.addEventListener("click", function(){ selectTab("report"); });
   tabSetup.addEventListener("click", function(){ selectTab("setup"); });
 
-  /* =========================================================
-     SETUP LOCK
-     ========================================================= */
-  var UNLOCK_KEY = "receiving-tool-setup-unlocked";
-  function isUnlocked(){ try{ return sessionStorage.getItem(UNLOCK_KEY) === "1"; }catch(e){ return false; } }
-  function setUnlocked(){ try{ sessionStorage.setItem(UNLOCK_KEY, "1"); }catch(e){} }
-
-  var lockScreen = document.getElementById("setup-lock");
   var setupContent = document.getElementById("setup-content");
-  function refreshLockState(){
-    var unlocked = isUnlocked();
-    lockScreen.hidden = unlocked;
-    setupContent.hidden = !unlocked;
-  }
-  document.getElementById("lock-form").addEventListener("submit", function(e){
-    e.preventDefault();
-    var input = document.getElementById("lock-input");
-    var err = document.getElementById("lock-error");
-    if (input.value === SETUP_ACCESS_CODE){
-      setUnlocked();
-      err.textContent = "";
-      input.value = "";
-      refreshLockState();
-    } else {
-      err.textContent = "Incorrect code. Try again.";
-      input.value = "";
-      input.focus();
-    }
-  });
-  refreshLockState();
 
   /* =========================================================
-     REPORT — dynamic count rows (boxes / kegs / bottles)
+     REPORT — dynamic count rows (boxes / bags / kegs / bottles)
      ========================================================= */
   var catsReportEl = document.getElementById("categories-report");
   var rowCounters = {};
@@ -525,6 +491,57 @@
     field.appendChild(input);
     field.appendChild(h("span", {class:"unit", text:"kg"}));
     row.appendChild(field);
+    row.appendChild(h("button", {type:"button", class:"row-remove", "data-remove":"1", "aria-label":"Remove " + label.toLowerCase() + " " + n, text:"×"}));
+    return row;
+  }
+
+  function bagRow(itemKey, label){
+    var n = (rowCounters[itemKey] = (rowCounters[itemKey]||0) + 1);
+    var row = h("div", {class:"entry-row", "data-row":"1"});
+    row.appendChild(h("span", {class:"entry-index", text:label + " " + n}));
+    var field = h("div", {class:"field"});
+    var input = h("input", {type:"number", inputmode:"numeric", step:"1", min:"0",
+      class:"input-bag-count", "aria-label":label + " " + n + " count", placeholder:"0", id: itemKey+"-bag-"+n});
+    field.appendChild(input);
+    field.appendChild(h("span", {class:"unit", text:"bags"}));
+    row.appendChild(field);
+    row.appendChild(h("button", {type:"button", class:"row-remove", "data-remove":"1", "aria-label":"Remove " + label.toLowerCase() + " " + n, text:"×"}));
+    return row;
+  }
+
+  function eaCountRow(itemKey, label){
+    var n = (rowCounters[itemKey] = (rowCounters[itemKey]||0) + 1);
+    var row = h("div", {class:"entry-row", "data-row":"1"});
+    row.appendChild(h("span", {class:"entry-index", text:label + " " + n}));
+    var field = h("div", {class:"field"});
+    var input = h("input", {type:"number", inputmode:"numeric", step:"1", min:"0",
+      class:"input-eacount", "aria-label":label + " " + n + " count", placeholder:"0", id: itemKey+"-eacount-"+n});
+    field.appendChild(input);
+    field.appendChild(h("span", {class:"unit", text:"EA"}));
+    row.appendChild(field);
+    row.appendChild(h("button", {type:"button", class:"row-remove", "data-remove":"1", "aria-label":"Remove " + label.toLowerCase() + " " + n, text:"×"}));
+    return row;
+  }
+
+  function eaBoxRow(itemKey, label){
+    var n = (rowCounters[itemKey] = (rowCounters[itemKey]||0) + 1);
+    var row = h("div", {class:"entry-row entry-row--juice", "data-row":"1"});
+    row.appendChild(h("span", {class:"entry-index", text:label + " " + n}));
+
+    var eaField = h("div", {class:"field"});
+    var eaInput = h("input", {type:"number", inputmode:"numeric", step:"1", min:"0",
+      class:"input-ea-count", "aria-label":label + " " + n + ", individual units (EA)", placeholder:"0", id: itemKey+"-ea-"+n});
+    eaField.appendChild(eaInput);
+    eaField.appendChild(h("span", {class:"unit", text:"EA"}));
+    row.appendChild(eaField);
+
+    var boxField = h("div", {class:"field"});
+    var boxInput = h("input", {type:"number", inputmode:"numeric", step:"1", min:"0",
+      class:"input-box6-count", "aria-label":label + " " + n + ", boxes of 6 EA", placeholder:"0", id: itemKey+"-box6-"+n});
+    boxField.appendChild(boxInput);
+    boxField.appendChild(h("span", {class:"unit", text:"box (6 EA)"}));
+    row.appendChild(boxField);
+
     row.appendChild(h("button", {type:"button", class:"row-remove", "data-remove":"1", "aria-label":"Remove " + label.toLowerCase() + " " + n, text:"×"}));
     return row;
   }
@@ -560,9 +577,12 @@
     var openSub = h("div", {class:"bottle-sub"});
     openSub.appendChild(h("span", {class:"bottle-sub-label", text:"Open bottles"}));
     var openRow = h("div", {class:"bottle-sub-row"});
-    openRow.appendChild(sizeSelect("input-open-size", itemKey+"-opensize-"+n, "Size of open " + label.toLowerCase() + " " + n));
+    var openSizeSel = sizeSelect("input-open-size", itemKey+"-opensize-"+n, "Size of open " + label.toLowerCase() + " " + n);
+    openSizeSel.value = bestOpenSizeFor(itemKey);
+    openRow.appendChild(openSizeSel);
     openRow.appendChild(openWeightField(itemKey, n, label, "open bottles, combined weight on the scale"));
     openSub.appendChild(openRow);
+    openSub.appendChild(h("span", {class:"config-missing", text:"Missing configuration for this size — set it up in Setup"}));
     row.appendChild(openSub);
 
     var closedSub = h("div", {class:"bottle-sub"});
@@ -578,24 +598,7 @@
     closedSub.appendChild(closedRow);
     row.appendChild(closedSub);
 
-    return row;
-  }
-
-  function juiceRow(itemKey, label){
-    var n = (rowCounters[itemKey] = (rowCounters[itemKey]||0) + 1);
-    var row = h("div", {class:"entry-row entry-row--juice", "data-row":"1"});
-    row.appendChild(h("span", {class:"entry-index", text:label + " " + n}));
-
-    row.appendChild(openWeightField(itemKey, n, label, "open 750 ml bottles, combined weight on the scale"));
-
-    var closedField = h("div", {class:"field"});
-    var closedInput = h("input", {type:"number", inputmode:"numeric", step:"1", min:"0",
-      class:"input-closed-count", "aria-label":label + " " + n + " unopened 750 ml bottles", placeholder:"0", id: itemKey+"-closed-"+n});
-    closedField.appendChild(closedInput);
-    closedField.appendChild(h("span", {class:"unit", text:"unopened (750 ml)"}));
-    row.appendChild(closedField);
-
-    row.appendChild(h("button", {type:"button", class:"row-remove", "data-remove":"1", "aria-label":"Remove " + label.toLowerCase() + " " + n, text:"×"}));
+    updateSpiritOpenAvailability(openSizeSel);
     return row;
   }
 
@@ -608,16 +611,28 @@
     });
   }
 
-  function buildItemBlock(item, kind, label, addText){
+  function rowFactory(kind){
+    if (kind === "spirit") return spiritRow;
+    if (kind === "eabox") return eaBoxRow;
+    if (kind === "bag") return bagRow;
+    if (kind === "eacount") return eaCountRow;
+    return boxRow;
+  }
+
+  function buildItemBlock(item, catKind, catLabel, catAddText){
+    var kind = item.kind || catKind;
+    var label = item.label || catLabel;
+    var addText = item.addText || catAddText;
     var block = h("div", {class:"item-block", "data-item-key":item.key, "data-kind":kind, "data-label":label});
     var head = h("div", {class:"item-head"});
     head.appendChild(h("h3", {text:item.name}));
     head.appendChild(h("button", {type:"button", class:"add-btn", "data-add":"1", text:addText}));
     block.appendChild(head);
+    if (item.hint) block.appendChild(h("p", {class:"item-hint", text:item.hint}));
     var rowsEl = h("div", {class:"rows", "data-rows":"1"});
     block.appendChild(rowsEl);
-    var firstRow = kind === "spirit" ? spiritRow(item.key, label) : (kind === "juice" ? juiceRow(item.key, label) : boxRow(item.key, label));
-    rowsEl.appendChild(firstRow);
+    var rowFn = rowFactory(kind);
+    rowsEl.appendChild(rowFn(item.key, label));
     renumber(rowsEl, label);
     return block;
   }
@@ -634,10 +649,10 @@
     container.appendChild(card);
   }
 
-  buildCategory(catsReportEl, "Fresh Garnish", "KG", "cat-card--garnish", GARNISH_ITEMS, "box", "Box", "+ Add box");
-  buildCategory(catsReportEl, "Juices", "L", "cat-card--juice", JUICE_ITEMS, "juice", "Bottle", "+ Add bottle");
-  buildCategory(catsReportEl, "Keg Beer", "L", "cat-card--beer", BEER_ITEMS, "box", "Keg", "+ Add keg");
   buildCategory(catsReportEl, "Alcohol List Check", "L", "cat-card--spirit", SPIRIT_ITEMS, "spirit", "Bottle", "+ Add bottle");
+  buildCategory(catsReportEl, "Fresh Garnish", "EA / BAG", "cat-card--garnish", GARNISH_ITEMS, "box", "Box", "+ Add box");
+  buildCategory(catsReportEl, "Juices", "EA / BOX", "cat-card--juice", JUICE_ITEMS, "eabox", "EA", "+ Add EA");
+  buildCategory(catsReportEl, "Keg Beer", "L", "cat-card--beer", BEER_ITEMS, "box", "Keg", "+ Add keg");
 
   catsReportEl.addEventListener("click", function(e){
     var addBtn = e.target.closest("[data-add]");
@@ -645,9 +660,12 @@
       var block = addBtn.closest(".item-block");
       var rowsEl = block.querySelector("[data-rows]");
       var key = block.dataset.itemKey, kind = block.dataset.kind, label = block.dataset.label;
-      var row = kind === "spirit" ? spiritRow(key, label) : (kind === "juice" ? juiceRow(key, label) : boxRow(key, label));
+      var rowFn = rowFactory(kind);
+      var row = rowFn(key, label);
       rowsEl.appendChild(row);
       renumber(rowsEl, label);
+      if (block.closest(".cat-card--beer")) updateBeerAvailability(block);
+      else if (block.closest(".cat-card--garnish")) updateGarnishAvailability(block);
       saveDraft();
       return;
     }
@@ -662,6 +680,9 @@
     }
   });
   catsReportEl.addEventListener("input", saveDraft);
+  catsReportEl.addEventListener("change", function(e){
+    if (e.target.matches(".input-open-size")) updateSpiritOpenAvailability(e.target);
+  });
 
   /* =========================================================
      SETUP — reference weight fields (mirrors the Report items)
@@ -695,7 +716,7 @@
   function buildBeerRef(item){
     var block = h("div", {class:"item-block"});
     block.appendChild(h("div", {class:"item-head"}, [h("h3", {text:item.name})]));
-    var row = h("div", {class:"ref-row ref-row--pair"});
+    var row = h("div", {class:"ref-row ref-row--trio"});
     var col1 = h("div", {});
     col1.appendChild(h("label", {class:"f-label", for:"ref-beer-"+item.key+"-empty", text:"Empty keg (kg)"}));
     var r1 = refField("ref-beer-"+item.key+"-empty", REFS.beer[item.key].empty, "kg", function(v){ REFS.beer[item.key].empty = v; scheduleSaveRefs(); });
@@ -704,24 +725,11 @@
     col2.appendChild(h("label", {class:"f-label", for:"ref-beer-"+item.key+"-full", text:"Full keg (kg)"}));
     var r2 = refField("ref-beer-"+item.key+"-full", REFS.beer[item.key].full, "kg", function(v){ REFS.beer[item.key].full = v; scheduleSaveRefs(); });
     col2.appendChild(r2.field);
-    row.appendChild(col1); row.appendChild(col2);
-    block.appendChild(row);
-    return block;
-  }
-
-  function buildJuiceRef(item){
-    var block = h("div", {class:"item-block"});
-    block.appendChild(h("div", {class:"item-head"}, [h("h3", {text:item.name})]));
-    var row = h("div", {class:"ref-row ref-row--pair"});
-    var col1 = h("div", {});
-    col1.appendChild(h("label", {class:"f-label", for:"ref-juice-"+item.key+"-empty", text:"Empty bottle (kg)"}));
-    var r1 = refField("ref-juice-"+item.key+"-empty", REFS.juices[item.key].empty, "kg", function(v){ REFS.juices[item.key].empty = v; scheduleSaveRefs(); });
-    col1.appendChild(r1.field);
-    var col2 = h("div", {});
-    col2.appendChild(h("label", {class:"f-label", for:"ref-juice-"+item.key+"-full", text:"Full bottle (kg)"}));
-    var r2 = refField("ref-juice-"+item.key+"-full", REFS.juices[item.key].full, "kg", function(v){ REFS.juices[item.key].full = v; scheduleSaveRefs(); });
-    col2.appendChild(r2.field);
-    row.appendChild(col1); row.appendChild(col2);
+    var col3 = h("div", {});
+    col3.appendChild(h("label", {class:"f-label", for:"ref-beer-"+item.key+"-liters", text:"Full keg volume (L)"}));
+    var r3 = refField("ref-beer-"+item.key+"-liters", REFS.beer[item.key].liters, "L", function(v){ REFS.beer[item.key].liters = v; scheduleSaveRefs(); });
+    col3.appendChild(r3.field);
+    row.appendChild(col1); row.appendChild(col2); row.appendChild(col3);
     block.appendChild(row);
     return block;
   }
@@ -759,10 +767,10 @@
 
   function renderSetupCategories(){
     catsSetupEl.innerHTML = "";
-    buildRefCategory("Fresh Garnish", "REFERENCE", "cat-card--garnish", GARNISH_ITEMS, buildGarnishRef);
-    buildRefCategory("Juices", "REFERENCE", "cat-card--juice", JUICE_ITEMS, buildJuiceRef);
-    buildRefCategory("Keg Beer", "REFERENCE", "cat-card--beer", BEER_ITEMS, buildBeerRef);
     buildRefCategory("Alcohol List Check", "REFERENCE", "cat-card--spirit", SPIRIT_ITEMS, buildSpiritRef);
+    var garnishRefItems = GARNISH_ITEMS.filter(function(i){ return !i.kind || i.kind === "box"; });
+    if (garnishRefItems.length) buildRefCategory("Fresh Garnish", "REFERENCE", "cat-card--garnish", garnishRefItems, buildGarnishRef);
+    buildRefCategory("Keg Beer", "REFERENCE", "cat-card--beer", BEER_ITEMS, buildBeerRef);
   }
   renderSetupCategories();
 
@@ -770,19 +778,87 @@
     // Re-render only if the user isn't actively typing in a setup field.
     if (setupContent.contains(document.activeElement) && document.activeElement.tagName === "INPUT") return;
     renderSetupCategories();
+    refreshReportAvailability();
   }
+
+  /* =========================================================
+     AVAILABILITY — an item/size with no Setup reference cannot
+     have a weight entered for it: the field is disabled and
+     shows "No reference" until Setup provides one.
+     ========================================================= */
+  function bestOpenSizeFor(itemKey){
+    var refs = REFS.spirits[itemKey];
+    if (refs) for (var i = 0; i < SIZES.length; i++){
+      if (hasRef(refs[SIZES[i].value])) return SIZES[i].value;
+    }
+    return SIZES[0].value;
+  }
+
+  function updateSpiritOpenAvailability(selectEl){
+    var row = selectEl.closest(".bottle-group");
+    var itemBlock = selectEl.closest(".item-block");
+    if (!row || !itemBlock) return;
+    var itemKey = itemBlock.dataset.itemKey;
+    var size = selectEl.value;
+    var ref = (REFS.spirits[itemKey] && REFS.spirits[itemKey][size]) || {empty:0, full:0};
+    var ok = hasRef(ref);
+    var kgInput = row.querySelector(".input-open-kg");
+    var countInput = row.querySelector(".input-open-count");
+    var msg = row.querySelector(".config-missing");
+    kgInput.disabled = !ok;
+    countInput.disabled = !ok;
+    kgInput.placeholder = ok ? "0.00" : "Not available";
+    countInput.placeholder = ok ? "1" : "—";
+    if (!ok){ kgInput.value = ""; countInput.value = ""; }
+    if (msg) msg.hidden = ok;
+  }
+
+  function refreshAllSpiritAvailability(){
+    document.querySelectorAll('#categories-report .cat-card--spirit .input-open-size').forEach(updateSpiritOpenAvailability);
+  }
+
+  function updateBeerAvailability(itemBlock){
+    var itemKey = itemBlock.dataset.itemKey;
+    var ref = REFS.beer[itemKey] || {empty:0, full:0, liters:0};
+    var ok = hasBeerRef(ref);
+    itemBlock.querySelectorAll(".input-kg").forEach(function(inp){
+      inp.disabled = !ok;
+      inp.placeholder = ok ? "0.00" : "Not available";
+      if (!ok) inp.value = "";
+    });
+  }
+  function refreshAllBeerAvailability(){
+    document.querySelectorAll('#categories-report .cat-card--beer .item-block').forEach(updateBeerAvailability);
+  }
+
+  function updateGarnishAvailability(itemBlock){
+    var itemKey = itemBlock.dataset.itemKey;
+    var ref = REFS.garnish[itemKey];
+    var ok = !!ref && (ref.full || 0) > 0;
+    itemBlock.querySelectorAll(".input-kg").forEach(function(inp){
+      inp.disabled = !ok;
+      inp.placeholder = ok ? "0.00" : "Not available";
+      if (!ok) inp.value = "";
+    });
+  }
+  function refreshAllGarnishAvailability(){
+    document.querySelectorAll('#categories-report .cat-card--garnish .item-block[data-kind="box"]').forEach(updateGarnishAvailability);
+  }
+
+  function refreshReportAvailability(){
+    refreshAllSpiritAvailability();
+    refreshAllBeerAvailability();
+    refreshAllGarnishAvailability();
+  }
+  refreshReportAvailability();
 
   /* =========================================================
      SETUP — general info + meta strip
      ========================================================= */
-  var elLoc = document.getElementById("s-location");
   var elDate = document.getElementById("s-date");
-  var elResp = document.getElementById("s-responsible");
   var elCounter = document.getElementById("r-counter");
   elCounter.addEventListener("input", saveDraft);
-  var metaLoc = document.getElementById("meta-location");
   var metaDate = document.getElementById("meta-date");
-  var metaResp = document.getElementById("meta-resp");
 
   function formatDate(iso){
     if (!iso) return "No date set";
@@ -790,13 +866,9 @@
     return parts.length === 3 ? (parts[1] + "/" + parts[2] + "/" + parts[0]) : iso;
   }
   function refreshMeta(){
-    metaLoc.textContent = elLoc.value.trim() || "No location set";
     metaDate.textContent = formatDate(elDate.value);
-    metaResp.textContent = elResp.value.trim() ? ("Responsible: " + elResp.value.trim()) : "No responsible set";
   }
-  [elLoc, elDate, elResp].forEach(function(el){ el.addEventListener("input", function(){ refreshMeta(); saveDraft(); }); });
-  document.getElementById("s-shift").addEventListener("input", saveDraft);
-  document.getElementById("s-notes").addEventListener("input", saveDraft);
+  elDate.addEventListener("input", function(){ refreshMeta(); saveDraft(); });
   if (!elDate.value) elDate.value = new Date().toISOString().slice(0,10);
   refreshMeta();
 
@@ -810,39 +882,36 @@
     return total;
   }
 
-  var JUICE_BOTTLE_L = 0.75;
-
-  function calcJuiceItem(item){
+  function calcBagItem(item){
     var block = catsReportEl.querySelector('[data-item-key="' + item.key + '"]');
-    var ref = REFS.juices[item.key] || {empty:0, full:0};
-    var total = 0, flagged = false;
-    block.querySelectorAll(".entry-row--juice").forEach(function(row){
-      var count = parseFloat(row.querySelector(".input-closed-count").value) || 0;
-      var openWeight = parseFloat(row.querySelector(".input-open-kg").value) || 0;
-      var openCount = parseFloat(row.querySelector(".input-open-count").value) || 0;
-      if (openWeight > 0 && openCount <= 0) openCount = 1;
-      total += count * JUICE_BOTTLE_L;
-      if (openWeight > 0){
-        var capacity = ((ref.full || 0) - (ref.empty || 0)) * openCount;
-        if (capacity > 0){
-          var liquid = openWeight - (ref.empty || 0) * openCount;
-          var fraction = clamp(liquid / capacity, 0, 1);
-          total += fraction * JUICE_BOTTLE_L * openCount;
-        } else {
-          flagged = true;
-        }
-      }
-    });
-    return {name:item.name, value: total, unit:"L", flagged: flagged};
+    var count = 0;
+    block.querySelectorAll(".input-bag-count").forEach(function(inp){ count += parseFloat(inp.value) || 0; });
+    return {name:item.name, value:count, unit:"bags", flagged:false};
+  }
+
+  function calcEaCountItem(item){
+    var block = catsReportEl.querySelector('[data-item-key="' + item.key + '"]');
+    var count = 0;
+    block.querySelectorAll(".input-eacount").forEach(function(inp){ count += parseFloat(inp.value) || 0; });
+    return {name:item.name, value:count, unit:"EA", flagged:false};
+  }
+
+  function calcEaBoxItem(item){
+    var block = catsReportEl.querySelector('[data-item-key="' + item.key + '"]');
+    var total = 0;
+    block.querySelectorAll(".input-ea-count").forEach(function(inp){ total += parseFloat(inp.value) || 0; });
+    block.querySelectorAll(".input-box6-count").forEach(function(inp){ total += (parseFloat(inp.value) || 0) * 6; });
+    return {name:item.name, value:total, unit:"EA", flagged:false};
   }
 
   function beerVolumeForRow(currentWeight, ref){
     var capacity = (ref.full || 0) - (ref.empty || 0);
+    var liters = ref.liters || 0;
     if (currentWeight <= 0) return {volume:0, calibrated:true};
-    if (capacity > 0){
+    if (capacity > 0 && liters > 0){
       var liquid = currentWeight - (ref.empty || 0);
       var fraction = clamp(liquid / capacity, 0, 1);
-      return {volume: fraction * capacity, calibrated:true};
+      return {volume: fraction * liters, calibrated:true};
     }
     if (ref.empty > 0){
       return {volume: Math.max(currentWeight - ref.empty, 0), calibrated:false};
@@ -852,7 +921,7 @@
 
   function calcBeerItem(item){
     var block = catsReportEl.querySelector('[data-item-key="' + item.key + '"]');
-    var ref = REFS.beer[item.key] || {empty:0, full:0};
+    var ref = REFS.beer[item.key] || {empty:0, full:0, liters:0};
     var total = 0, calibrated = true, anyWeight = false;
     block.querySelectorAll(".input-kg").forEach(function(inp){
       var w = parseFloat(inp.value) || 0;
@@ -918,24 +987,33 @@
   }
 
   function calcAll(){
+    var spiritRows = SPIRIT_ITEMS.map(calcSpiritItem);
+
     var garnishRows = GARNISH_ITEMS.map(function(item){
+      if (item.kind === "bag") return calcBagItem(item);
+      if (item.kind === "eacount") return calcEaCountItem(item);
       var kg = sumBoxItem(item);
-      var ref = REFS.garnish[item.key].full || 0;
+      var ref = (REFS.garnish[item.key] && REFS.garnish[item.key].full) || 0;
       var name = item.name + (ref > 0 ? " (≈ " + fmt(kg/ref) + " boxes)" : "");
       return {name:name, value:kg, unit:"kg", flagged:false};
     });
-    var juiceRows = JUICE_ITEMS.map(calcJuiceItem);
+
+    var juiceRows = JUICE_ITEMS.map(function(item){
+      if (item.kind === "eabox") return calcEaBoxItem(item);
+      var kg = sumBoxItem(item);
+      return {name:item.name, value:kg, unit:"kg", flagged:false};
+    });
+
     var beerRows = BEER_ITEMS.map(calcBeerItem);
-    var spiritRows = SPIRIT_ITEMS.map(calcSpiritItem);
 
     lastResults = {garnish:garnishRows, juices:juiceRows, beer:beerRows, spirits:spiritRows};
 
     var results = document.getElementById("results");
     results.innerHTML = "";
+    results.appendChild(buildResultCard("Alcohol List Check", "dot--spirit", spiritRows));
     results.appendChild(buildResultCard("Fresh Garnish", "dot--garnish", garnishRows));
     results.appendChild(buildResultCard("Juices", "dot--juice", juiceRows));
     results.appendChild(buildResultCard("Keg Beer", "dot--beer", beerRows));
-    results.appendChild(buildResultCard("Alcohol List Check", "dot--spirit", spiritRows));
 
     var exportWrap = h("div", {class:"export-wrap"});
     exportWrap.appendChild(h("button", {type:"button", class:"btn-export", id:"btn-export", text:"Export Excel"}));
@@ -956,10 +1034,11 @@
       var rowsEl = block.querySelector("[data-rows]");
       rowsEl.innerHTML = "";
       var key = block.dataset.itemKey, kind = block.dataset.kind, label = block.dataset.label;
-      var row = kind === "spirit" ? spiritRow(key, label) : (kind === "juice" ? juiceRow(key, label) : boxRow(key, label));
-      rowsEl.appendChild(row);
+      var rowFn = rowFactory(kind);
+      rowsEl.appendChild(rowFn(key, label));
       renumber(rowsEl, label);
     });
+    refreshReportAvailability();
     var results = document.getElementById("results");
     results.hidden = true;
     results.innerHTML = "";
@@ -995,10 +1074,10 @@
       rows.forEach(function(r){ aoa.push([r.name, fmt(r.value) + " " + r.unit]); });
       return XLSX.utils.aoa_to_sheet(aoa);
     }
+    XLSX.utils.book_append_sheet(wb, sheetFrom(lastResults.spirits), "Alcohol List Check");
     XLSX.utils.book_append_sheet(wb, sheetFrom(lastResults.garnish), "Fresh Garnish");
     XLSX.utils.book_append_sheet(wb, sheetFrom(lastResults.juices), "Juices");
     XLSX.utils.book_append_sheet(wb, sheetFrom(lastResults.beer), "Keg Beer");
-    XLSX.utils.book_append_sheet(wb, sheetFrom(lastResults.spirits), "Alcohol List Check");
 
     var wbout = XLSX.write(wb, {bookType:"xlsx", type:"array"});
     var blob = new Blob([wbout], {type:"application/octet-stream"});
@@ -1025,33 +1104,41 @@
   /* =========================================================
      DRAFT AUTOSAVE (report entries — per-browser convenience)
      ========================================================= */
-  var DRAFT_KEY = "receiving-tool-draft-v1";
+  var DRAFT_KEY = "receiving-tool-draft-v3";
   var saveTimer = null;
 
   function serialize(){
     var state = {
       setup: {
-        location: elLoc.value, date: elDate.value, responsible: elResp.value,
-        shift: document.getElementById("s-shift").value, notes: document.getElementById("s-notes").value,
+        date: elDate.value,
         counter: elCounter.value
       },
-      box: {}, spirit: {}, juice: {}
+      box: {}, spirit: {}, bag: {}, eabox: {}, eacount: {}
     };
     catsReportEl.querySelectorAll('.item-block[data-kind="box"]').forEach(function(block){
       var vals = [];
       block.querySelectorAll(".input-kg").forEach(function(inp){ vals.push(inp.value); });
       state.box[block.dataset.itemKey] = vals;
     });
-    catsReportEl.querySelectorAll('.item-block[data-kind="juice"]').forEach(function(block){
+    catsReportEl.querySelectorAll('.item-block[data-kind="bag"]').forEach(function(block){
+      var vals = [];
+      block.querySelectorAll(".input-bag-count").forEach(function(inp){ vals.push(inp.value); });
+      state.bag[block.dataset.itemKey] = vals;
+    });
+    catsReportEl.querySelectorAll('.item-block[data-kind="eacount"]').forEach(function(block){
+      var vals = [];
+      block.querySelectorAll(".input-eacount").forEach(function(inp){ vals.push(inp.value); });
+      state.eacount[block.dataset.itemKey] = vals;
+    });
+    catsReportEl.querySelectorAll('.item-block[data-kind="eabox"]').forEach(function(block){
       var rows = [];
       block.querySelectorAll(".entry-row--juice").forEach(function(row){
         rows.push({
-          openKg: row.querySelector(".input-open-kg").value,
-          openCount: row.querySelector(".input-open-count").value,
-          closed: row.querySelector(".input-closed-count").value
+          ea: row.querySelector(".input-ea-count").value,
+          box6: row.querySelector(".input-box6-count").value
         });
       });
-      state.juice[block.dataset.itemKey] = rows;
+      state.eabox[block.dataset.itemKey] = rows;
     });
     catsReportEl.querySelectorAll('.item-block[data-kind="spirit"]').forEach(function(block){
       var rows = [];
@@ -1085,11 +1172,7 @@
     if (!state) return;
 
     if (state.setup){
-      elLoc.value = state.setup.location || "";
       if (state.setup.date) elDate.value = state.setup.date;
-      elResp.value = state.setup.responsible || "";
-      document.getElementById("s-shift").value = state.setup.shift || "";
-      document.getElementById("s-notes").value = state.setup.notes || "";
       elCounter.value = state.setup.counter || "";
       refreshMeta();
     }
@@ -1110,20 +1193,53 @@
         renumber(rowsEl, label);
       });
     }
-    if (state.juice){
-      Object.keys(state.juice).forEach(function(key){
+    if (state.bag){
+      Object.keys(state.bag).forEach(function(key){
         var block = catsReportEl.querySelector('[data-item-key="' + key + '"]');
         if (!block) return;
         var rowsEl = block.querySelector("[data-rows]");
         var label = block.dataset.label;
-        var rows = state.juice[key];
+        var vals = state.bag[key];
+        if (!vals || !vals.length) return;
+        rowsEl.innerHTML = "";
+        vals.forEach(function(v){
+          var row = bagRow(key, label);
+          row.querySelector(".input-bag-count").value = v;
+          rowsEl.appendChild(row);
+        });
+        renumber(rowsEl, label);
+      });
+    }
+    if (state.eacount){
+      Object.keys(state.eacount).forEach(function(key){
+        var block = catsReportEl.querySelector('[data-item-key="' + key + '"]');
+        if (!block) return;
+        var rowsEl = block.querySelector("[data-rows]");
+        var label = block.dataset.label;
+        var vals = state.eacount[key];
+        if (!vals || !vals.length) return;
+        rowsEl.innerHTML = "";
+        vals.forEach(function(v){
+          var row = eaCountRow(key, label);
+          row.querySelector(".input-eacount").value = v;
+          rowsEl.appendChild(row);
+        });
+        renumber(rowsEl, label);
+      });
+    }
+    if (state.eabox){
+      Object.keys(state.eabox).forEach(function(key){
+        var block = catsReportEl.querySelector('[data-item-key="' + key + '"]');
+        if (!block) return;
+        var rowsEl = block.querySelector("[data-rows]");
+        var label = block.dataset.label;
+        var rows = state.eabox[key];
         if (!rows || !rows.length) return;
         rowsEl.innerHTML = "";
         rows.forEach(function(r){
-          var row = juiceRow(key, label);
-          row.querySelector(".input-open-kg").value = r.openKg || "";
-          row.querySelector(".input-open-count").value = r.openCount || "";
-          row.querySelector(".input-closed-count").value = r.closed || "";
+          var row = eaBoxRow(key, label);
+          row.querySelector(".input-ea-count").value = r.ea || "";
+          row.querySelector(".input-box6-count").value = r.box6 || "";
           rowsEl.appendChild(row);
         });
         renumber(rowsEl, label);
@@ -1152,6 +1268,7 @@
     }
   }
   restoreDraft();
+  refreshReportAvailability();
 
   /* =========================================================
      CAPABILITIES: db (shared reference weights) + downloads
