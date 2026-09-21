@@ -18,6 +18,8 @@
     --accent-ink:#FFFFFF;
     --garnish:#3C7A56;
     --garnish-soft:#E6F1EA;
+    --juice:#B08900;
+    --juice-soft:#F5ECC7;
     --beer:#A9720E;
     --beer-soft:#F6EAD1;
     --spirit:#6C4A82;
@@ -31,7 +33,8 @@
     :root:not([data-theme="light"]){
       --bg:#17150F; --surface:#201D17; --surface-2:#251F17; --border:#3A3324;
       --ink:#F2EDE1; --muted:#AEA48F; --accent:#E28A45; --accent-ink:#1C1006;
-      --garnish:#69BB8E; --garnish-soft:#1E2D24; --beer:#E3AC4C; --beer-soft:#332711;
+      --garnish:#69BB8E; --garnish-soft:#1E2D24; --juice:#E6C34A; --juice-soft:#332C12;
+      --beer:#E3AC4C; --beer-soft:#332711;
       --spirit:#BFA0D8; --spirit-soft:#2B2233; --danger:#E28E8E; --danger-soft:#33211E;
       --focus:#7BB6EA; --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
     }
@@ -39,7 +42,8 @@
   :root[data-theme="dark"]{
     --bg:#17150F; --surface:#201D17; --surface-2:#251F17; --border:#3A3324;
     --ink:#F2EDE1; --muted:#AEA48F; --accent:#E28A45; --accent-ink:#1C1006;
-    --garnish:#69BB8E; --garnish-soft:#1E2D24; --beer:#E3AC4C; --beer-soft:#332711;
+    --garnish:#69BB8E; --garnish-soft:#1E2D24; --juice:#E6C34A; --juice-soft:#332C12;
+    --beer:#E3AC4C; --beer-soft:#332711;
     --spirit:#BFA0D8; --spirit-soft:#2B2233; --danger:#E28E8E; --danger-soft:#33211E;
     --focus:#7BB6EA; --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
   }
@@ -96,6 +100,8 @@
   }
   .cat-card--garnish .cat-head{border-top:4px solid var(--garnish);}
   .cat-card--garnish .cat-tag{background:var(--garnish-soft); color:var(--garnish);}
+  .cat-card--juice .cat-head{border-top:4px solid var(--juice);}
+  .cat-card--juice .cat-tag{background:var(--juice-soft); color:var(--juice);}
   .cat-card--beer .cat-head{border-top:4px solid var(--beer);}
   .cat-card--beer .cat-tag{background:var(--beer-soft); color:var(--beer);}
   .cat-card--spirit .cat-head{border-top:4px solid var(--spirit);}
@@ -114,7 +120,7 @@
 
   .rows{display:flex; flex-direction:column; gap:8px;}
   .entry-row{ display:grid; grid-template-columns:64px 1fr 28px; align-items:center; gap:8px; }
-  .entry-row--spirit{grid-template-columns:64px 1fr 1fr 28px;}
+  .entry-row--juice{grid-template-columns:64px 1fr 1fr 28px;}
   .entry-index{font-size:12px; color:var(--muted); font-weight:600;}
   .field{
     position:relative; display:flex; align-items:center; background:var(--surface-2);
@@ -126,6 +132,25 @@
   }
   .field input::placeholder{color:var(--muted); font-weight:400;}
   .field .unit{font-size:11px; color:var(--muted); white-space:nowrap; padding-left:4px;}
+  .field--multi .count-sub{
+    flex:0 0 34px; width:34px; min-width:34px; text-align:center; padding:9px 2px;
+    border-left:1px solid var(--border); margin-left:6px;
+  }
+
+  /* ---- alcohol: stacked open/full bottle groups ---- */
+  .entry-row.bottle-group{
+    display:block; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:10px; padding:12px;
+  }
+  .bottle-group-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .bottle-sub{margin-bottom:10px;}
+  .bottle-sub:last-child{margin-bottom:0;}
+  .bottle-sub-label{
+    display:block; font-size:10.5px; font-weight:700; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;
+  }
+  .bottle-sub-row{display:grid; grid-template-columns:84px 1fr; gap:8px; align-items:center;}
+  @media (max-width:380px){ .bottle-sub-row{grid-template-columns:1fr;} }
   select.input-size{
     padding:9px 8px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2);
     color:var(--ink); font-weight:600; font-size:13px;
@@ -138,12 +163,11 @@
   .row-remove[hidden]{visibility:hidden;}
 
   @media (max-width:520px){
-    .entry-row--spirit{grid-template-columns:1fr 1fr; grid-template-areas:"idx idx" "size open" "closed remove";}
-    .entry-row--spirit .entry-index{grid-area:idx;}
-    .entry-row--spirit select.input-size{grid-area:size;}
-    .entry-row--spirit .field:nth-of-type(1){grid-area:open;}
-    .entry-row--spirit .field:nth-of-type(2){grid-area:closed;}
-    .entry-row--spirit .row-remove{grid-area:remove; justify-self:end;}
+    .entry-row--juice{grid-template-columns:1fr 1fr; grid-template-areas:"idx remove" "open open" "closed closed";}
+    .entry-row--juice .entry-index{grid-area:idx;}
+    .entry-row--juice .field:nth-of-type(1){grid-area:open;}
+    .entry-row--juice .field:nth-of-type(2){grid-area:closed;}
+    .entry-row--juice .row-remove{grid-area:remove; justify-self:end;}
   }
 
   /* ---- setup: reference fields ---- */
@@ -208,7 +232,7 @@
   }
   .result-card h2{font-size:15px; margin-bottom:10px; display:flex; align-items:center; gap:8px;}
   .dot{width:10px; height:10px; border-radius:50%; flex:none;}
-  .dot--garnish{background:var(--garnish);} .dot--beer{background:var(--beer);} .dot--spirit{background:var(--spirit);}
+  .dot--garnish{background:var(--garnish);} .dot--juice{background:var(--juice);} .dot--beer{background:var(--beer);} .dot--spirit{background:var(--spirit);}
   .result-row{
     display:flex; justify-content:space-between; align-items:baseline; gap:10px;
     padding:7px 0; border-bottom:1px solid var(--border); font-size:13.5px;
@@ -350,6 +374,10 @@
     {key:"josegold", name:"Jose Gold"},
     {key:"tanqueray",name:"Tanqueray"}
   ];
+  var JUICE_ITEMS = [
+    {key:"limejuice",  name:"Lime Juice"},
+    {key:"lemonjuice", name:"Lemon Juice"}
+  ];
   var SIZES = [
     {value:"0.75", label:"750 ml", slug:"0_75"},
     {value:"1",    label:"1 L",    slug:"1"},
@@ -377,7 +405,7 @@
      when available, otherwise saved to this browser only.
      ========================================================= */
   function defaultRefs(){
-    var garnish={}, beer={}, spirits={};
+    var garnish={}, beer={}, spirits={}, juices={};
     GARNISH_ITEMS.forEach(function(i){ garnish[i.key] = {full:0}; });
     BEER_ITEMS.forEach(function(i){ beer[i.key] = {empty:0, full:0}; });
     SPIRIT_ITEMS.forEach(function(i){
@@ -385,7 +413,8 @@
       SIZES.forEach(function(s){ sizes[s.value] = {empty:0, full:0}; });
       spirits[i.key] = sizes;
     });
-    return {garnish:garnish, beer:beer, spirits:spirits};
+    JUICE_ITEMS.forEach(function(i){ juices[i.key] = {empty:0, full:0}; });
+    return {garnish:garnish, beer:beer, spirits:spirits, juices:juices};
   }
   var REFS = defaultRefs();
   var REFS_LOCAL_KEY = "receiving-tool-refs-v1";
@@ -398,6 +427,7 @@
     if (data.spirits) for (var s in data.spirits) if (REFS.spirits[s]) {
       for (var sz in data.spirits[s]) if (REFS.spirits[s][sz]) REFS.spirits[s][sz] = Object.assign({}, REFS.spirits[s][sz], data.spirits[s][sz]);
     }
+    if (data.juices) for (var j in data.juices) if (REFS.juices[j]) REFS.juices[j] = Object.assign({}, REFS.juices[j], data.juices[j]);
   }
   function saveRefsLocal(){
     try{ localStorage.setItem(REFS_LOCAL_KEY, JSON.stringify(REFS)); }catch(e){}
@@ -494,27 +524,70 @@
     return row;
   }
 
+  function openWeightField(itemKey, n, label, weightAriaSuffix){
+    var openField = h("div", {class:"field field--multi"});
+    var openInput = h("input", {type:"number", inputmode:"decimal", step:"0.01", min:"0",
+      class:"input-open-kg", "aria-label":label + " " + n + " " + weightAriaSuffix, placeholder:"0.00", id: itemKey+"-openkg-"+n});
+    openField.appendChild(openInput);
+    openField.appendChild(h("span", {class:"unit", text:"kg for"}));
+    var countInput = h("input", {type:"number", inputmode:"numeric", step:"1", min:"1",
+      class:"input-open-count count-sub", "aria-label":label + " " + n + ", how many bottles were weighed together", placeholder:"1", id: itemKey+"-opencount-"+n});
+    openField.appendChild(countInput);
+    openField.appendChild(h("span", {class:"unit", text:"btl"}));
+    return openField;
+  }
+
+  function sizeSelect(cls, id, ariaLabel){
+    var select = h("select", {class:"input-size " + cls, "aria-label":ariaLabel, id:id});
+    SIZES.forEach(function(s){ select.appendChild(h("option", {value:s.value, text:s.label})); });
+    return select;
+  }
+
   function spiritRow(itemKey, label){
     var n = (rowCounters[itemKey] = (rowCounters[itemKey]||0) + 1);
-    var row = h("div", {class:"entry-row entry-row--spirit", "data-row":"1"});
+    var row = h("div", {class:"entry-row bottle-group", "data-row":"1"});
+
+    var head = h("div", {class:"bottle-group-head"});
+    head.appendChild(h("span", {class:"entry-index", text:label + " " + n}));
+    head.appendChild(h("button", {type:"button", class:"row-remove", "data-remove":"1", "aria-label":"Remove " + label.toLowerCase() + " " + n, text:"×"}));
+    row.appendChild(head);
+
+    var openSub = h("div", {class:"bottle-sub"});
+    openSub.appendChild(h("span", {class:"bottle-sub-label", text:"Open bottles"}));
+    var openRow = h("div", {class:"bottle-sub-row"});
+    openRow.appendChild(sizeSelect("input-open-size", itemKey+"-opensize-"+n, "Size of open " + label.toLowerCase() + " " + n));
+    openRow.appendChild(openWeightField(itemKey, n, label, "open bottles, combined weight on the scale"));
+    openSub.appendChild(openRow);
+    row.appendChild(openSub);
+
+    var closedSub = h("div", {class:"bottle-sub"});
+    closedSub.appendChild(h("span", {class:"bottle-sub-label", text:"Full bottles"}));
+    var closedRow = h("div", {class:"bottle-sub-row"});
+    closedRow.appendChild(sizeSelect("input-closed-size", itemKey+"-closedsize-"+n, "Size of full " + label.toLowerCase() + " " + n));
+    var closedField = h("div", {class:"field"});
+    var closedInput = h("input", {type:"number", inputmode:"numeric", step:"1", min:"0",
+      class:"input-closed-count", "aria-label":label + " " + n + " full unopened bottles", placeholder:"0", id: itemKey+"-closed-"+n});
+    closedField.appendChild(closedInput);
+    closedField.appendChild(h("span", {class:"unit", text:"bottles"}));
+    closedRow.appendChild(closedField);
+    closedSub.appendChild(closedRow);
+    row.appendChild(closedSub);
+
+    return row;
+  }
+
+  function juiceRow(itemKey, label){
+    var n = (rowCounters[itemKey] = (rowCounters[itemKey]||0) + 1);
+    var row = h("div", {class:"entry-row entry-row--juice", "data-row":"1"});
     row.appendChild(h("span", {class:"entry-index", text:label + " " + n}));
 
-    var select = h("select", {class:"input-size", "aria-label":"Size of " + label.toLowerCase() + " " + n, id: itemKey+"-size-"+n});
-    SIZES.forEach(function(s){ select.appendChild(h("option", {value:s.value, text:s.label})); });
-    row.appendChild(select);
-
-    var openField = h("div", {class:"field"});
-    var openInput = h("input", {type:"number", inputmode:"decimal", step:"0.01", min:"0",
-      class:"input-open-kg", "aria-label":label + " " + n + " open bottle weight in kg", placeholder:"0.00", id: itemKey+"-openkg-"+n});
-    openField.appendChild(openInput);
-    openField.appendChild(h("span", {class:"unit", text:"open (kg)"}));
-    row.appendChild(openField);
+    row.appendChild(openWeightField(itemKey, n, label, "open 750 ml bottles, combined weight on the scale"));
 
     var closedField = h("div", {class:"field"});
     var closedInput = h("input", {type:"number", inputmode:"numeric", step:"1", min:"0",
-      class:"input-closed-count", "aria-label":label + " " + n + " unopened count", placeholder:"0", id: itemKey+"-closed-"+n});
+      class:"input-closed-count", "aria-label":label + " " + n + " unopened 750 ml bottles", placeholder:"0", id: itemKey+"-closed-"+n});
     closedField.appendChild(closedInput);
-    closedField.appendChild(h("span", {class:"unit", text:"unopened"}));
+    closedField.appendChild(h("span", {class:"unit", text:"unopened (750 ml)"}));
     row.appendChild(closedField);
 
     row.appendChild(h("button", {type:"button", class:"row-remove", "data-remove":"1", "aria-label":"Remove " + label.toLowerCase() + " " + n, text:"×"}));
@@ -538,7 +611,7 @@
     block.appendChild(head);
     var rowsEl = h("div", {class:"rows", "data-rows":"1"});
     block.appendChild(rowsEl);
-    var firstRow = kind === "spirit" ? spiritRow(item.key, label) : boxRow(item.key, label);
+    var firstRow = kind === "spirit" ? spiritRow(item.key, label) : (kind === "juice" ? juiceRow(item.key, label) : boxRow(item.key, label));
     rowsEl.appendChild(firstRow);
     renumber(rowsEl, label);
     return block;
@@ -557,6 +630,7 @@
   }
 
   buildCategory(catsReportEl, "Fresh Garnish", "KG", "cat-card--garnish", GARNISH_ITEMS, "box", "Box", "+ Add box");
+  buildCategory(catsReportEl, "Juices", "L", "cat-card--juice", JUICE_ITEMS, "juice", "Bottle", "+ Add bottle");
   buildCategory(catsReportEl, "Keg Beer", "L", "cat-card--beer", BEER_ITEMS, "box", "Keg", "+ Add keg");
   buildCategory(catsReportEl, "Alcohol List Check", "L", "cat-card--spirit", SPIRIT_ITEMS, "spirit", "Bottle", "+ Add bottle");
 
@@ -566,7 +640,7 @@
       var block = addBtn.closest(".item-block");
       var rowsEl = block.querySelector("[data-rows]");
       var key = block.dataset.itemKey, kind = block.dataset.kind, label = block.dataset.label;
-      var row = kind === "spirit" ? spiritRow(key, label) : boxRow(key, label);
+      var row = kind === "spirit" ? spiritRow(key, label) : (kind === "juice" ? juiceRow(key, label) : boxRow(key, label));
       rowsEl.appendChild(row);
       renumber(rowsEl, label);
       saveDraft();
@@ -630,6 +704,23 @@
     return block;
   }
 
+  function buildJuiceRef(item){
+    var block = h("div", {class:"item-block"});
+    block.appendChild(h("div", {class:"item-head"}, [h("h3", {text:item.name})]));
+    var row = h("div", {class:"ref-row ref-row--pair"});
+    var col1 = h("div", {});
+    col1.appendChild(h("label", {class:"f-label", for:"ref-juice-"+item.key+"-empty", text:"Empty bottle (kg)"}));
+    var r1 = refField("ref-juice-"+item.key+"-empty", REFS.juices[item.key].empty, "kg", function(v){ REFS.juices[item.key].empty = v; scheduleSaveRefs(); });
+    col1.appendChild(r1.field);
+    var col2 = h("div", {});
+    col2.appendChild(h("label", {class:"f-label", for:"ref-juice-"+item.key+"-full", text:"Full bottle (kg)"}));
+    var r2 = refField("ref-juice-"+item.key+"-full", REFS.juices[item.key].full, "kg", function(v){ REFS.juices[item.key].full = v; scheduleSaveRefs(); });
+    col2.appendChild(r2.field);
+    row.appendChild(col1); row.appendChild(col2);
+    block.appendChild(row);
+    return block;
+  }
+
   function buildSpiritRef(item){
     var block = h("div", {class:"item-block"});
     block.appendChild(h("div", {class:"item-head"}, [h("h3", {text:item.name})]));
@@ -664,6 +755,7 @@
   function renderSetupCategories(){
     catsSetupEl.innerHTML = "";
     buildRefCategory("Fresh Garnish", "REFERENCE", "cat-card--garnish", GARNISH_ITEMS, buildGarnishRef);
+    buildRefCategory("Juices", "REFERENCE", "cat-card--juice", JUICE_ITEMS, buildJuiceRef);
     buildRefCategory("Keg Beer", "REFERENCE", "cat-card--beer", BEER_ITEMS, buildBeerRef);
     buildRefCategory("Alcohol List Check", "REFERENCE", "cat-card--spirit", SPIRIT_ITEMS, buildSpiritRef);
   }
@@ -711,6 +803,32 @@
     return total;
   }
 
+  var JUICE_BOTTLE_L = 0.75;
+
+  function calcJuiceItem(item){
+    var block = catsReportEl.querySelector('[data-item-key="' + item.key + '"]');
+    var ref = REFS.juices[item.key] || {empty:0, full:0};
+    var total = 0, flagged = false;
+    block.querySelectorAll(".entry-row--juice").forEach(function(row){
+      var count = parseFloat(row.querySelector(".input-closed-count").value) || 0;
+      var openWeight = parseFloat(row.querySelector(".input-open-kg").value) || 0;
+      var openCount = parseFloat(row.querySelector(".input-open-count").value) || 0;
+      if (openWeight > 0 && openCount <= 0) openCount = 1;
+      total += count * JUICE_BOTTLE_L;
+      if (openWeight > 0){
+        var capacity = ((ref.full || 0) - (ref.empty || 0)) * openCount;
+        if (capacity > 0){
+          var liquid = openWeight - (ref.empty || 0) * openCount;
+          var fraction = clamp(liquid / capacity, 0, 1);
+          total += fraction * JUICE_BOTTLE_L * openCount;
+        } else {
+          flagged = true;
+        }
+      }
+    });
+    return {name:item.name, value: total, unit:"L", flagged: flagged};
+  }
+
   function beerVolumeForRow(currentWeight, ref){
     var capacity = (ref.full || 0) - (ref.empty || 0);
     if (currentWeight <= 0) return {volume:0, calibrated:true};
@@ -742,19 +860,24 @@
   function calcSpiritItem(item){
     var block = catsReportEl.querySelector('[data-item-key="' + item.key + '"]');
     var total = 0, flagged = false;
-    block.querySelectorAll(".entry-row--spirit").forEach(function(row){
-      var sizeVal = row.querySelector(".input-size").value;
-      var sizeLiters = parseFloat(sizeVal) || 0;
+    block.querySelectorAll(".bottle-group").forEach(function(row){
+      var closedSizeVal = row.querySelector(".input-closed-size").value;
+      var closedSizeLiters = parseFloat(closedSizeVal) || 0;
       var count = parseFloat(row.querySelector(".input-closed-count").value) || 0;
+      total += count * closedSizeLiters;
+
+      var openSizeVal = row.querySelector(".input-open-size").value;
+      var openSizeLiters = parseFloat(openSizeVal) || 0;
       var openWeight = parseFloat(row.querySelector(".input-open-kg").value) || 0;
-      total += count * sizeLiters;
+      var openCount = parseFloat(row.querySelector(".input-open-count").value) || 0;
+      if (openWeight > 0 && openCount <= 0) openCount = 1;
       if (openWeight > 0){
-        var ref = (REFS.spirits[item.key] && REFS.spirits[item.key][sizeVal]) || {empty:0, full:0};
-        var capacity = (ref.full || 0) - (ref.empty || 0);
+        var ref = (REFS.spirits[item.key] && REFS.spirits[item.key][openSizeVal]) || {empty:0, full:0};
+        var capacity = ((ref.full || 0) - (ref.empty || 0)) * openCount;
         if (capacity > 0){
-          var liquid = openWeight - (ref.empty || 0);
+          var liquid = openWeight - (ref.empty || 0) * openCount;
           var fraction = clamp(liquid / capacity, 0, 1);
-          total += fraction * sizeLiters;
+          total += fraction * openSizeLiters * openCount;
         } else {
           flagged = true;
         }
@@ -794,14 +917,16 @@
       var name = item.name + (ref > 0 ? " (≈ " + fmt(kg/ref) + " boxes)" : "");
       return {name:name, value:kg, unit:"kg", flagged:false};
     });
+    var juiceRows = JUICE_ITEMS.map(calcJuiceItem);
     var beerRows = BEER_ITEMS.map(calcBeerItem);
     var spiritRows = SPIRIT_ITEMS.map(calcSpiritItem);
 
-    lastResults = {garnish:garnishRows, beer:beerRows, spirits:spiritRows};
+    lastResults = {garnish:garnishRows, juices:juiceRows, beer:beerRows, spirits:spiritRows};
 
     var results = document.getElementById("results");
     results.innerHTML = "";
     results.appendChild(buildResultCard("Fresh Garnish", "dot--garnish", garnishRows));
+    results.appendChild(buildResultCard("Juices", "dot--juice", juiceRows));
     results.appendChild(buildResultCard("Keg Beer", "dot--beer", beerRows));
     results.appendChild(buildResultCard("Alcohol List Check", "dot--spirit", spiritRows));
 
@@ -824,7 +949,7 @@
       var rowsEl = block.querySelector("[data-rows]");
       rowsEl.innerHTML = "";
       var key = block.dataset.itemKey, kind = block.dataset.kind, label = block.dataset.label;
-      var row = kind === "spirit" ? spiritRow(key, label) : boxRow(key, label);
+      var row = kind === "spirit" ? spiritRow(key, label) : (kind === "juice" ? juiceRow(key, label) : boxRow(key, label));
       rowsEl.appendChild(row);
       renumber(rowsEl, label);
     });
@@ -864,6 +989,7 @@
       return XLSX.utils.aoa_to_sheet(aoa);
     }
     XLSX.utils.book_append_sheet(wb, sheetFrom(lastResults.garnish), "Fresh Garnish");
+    XLSX.utils.book_append_sheet(wb, sheetFrom(lastResults.juices), "Juices");
     XLSX.utils.book_append_sheet(wb, sheetFrom(lastResults.beer), "Keg Beer");
     XLSX.utils.book_append_sheet(wb, sheetFrom(lastResults.spirits), "Alcohol List Check");
 
@@ -901,19 +1027,32 @@
         location: elLoc.value, date: elDate.value, responsible: elResp.value,
         shift: document.getElementById("s-shift").value, notes: document.getElementById("s-notes").value
       },
-      box: {}, spirit: {}
+      box: {}, spirit: {}, juice: {}
     };
     catsReportEl.querySelectorAll('.item-block[data-kind="box"]').forEach(function(block){
       var vals = [];
       block.querySelectorAll(".input-kg").forEach(function(inp){ vals.push(inp.value); });
       state.box[block.dataset.itemKey] = vals;
     });
+    catsReportEl.querySelectorAll('.item-block[data-kind="juice"]').forEach(function(block){
+      var rows = [];
+      block.querySelectorAll(".entry-row--juice").forEach(function(row){
+        rows.push({
+          openKg: row.querySelector(".input-open-kg").value,
+          openCount: row.querySelector(".input-open-count").value,
+          closed: row.querySelector(".input-closed-count").value
+        });
+      });
+      state.juice[block.dataset.itemKey] = rows;
+    });
     catsReportEl.querySelectorAll('.item-block[data-kind="spirit"]').forEach(function(block){
       var rows = [];
-      block.querySelectorAll(".entry-row--spirit").forEach(function(row){
+      block.querySelectorAll(".bottle-group").forEach(function(row){
         rows.push({
-          size: row.querySelector(".input-size").value,
+          openSize: row.querySelector(".input-open-size").value,
           openKg: row.querySelector(".input-open-kg").value,
+          openCount: row.querySelector(".input-open-count").value,
+          closedSize: row.querySelector(".input-closed-size").value,
           closed: row.querySelector(".input-closed-count").value
         });
       });
@@ -962,6 +1101,25 @@
         renumber(rowsEl, label);
       });
     }
+    if (state.juice){
+      Object.keys(state.juice).forEach(function(key){
+        var block = catsReportEl.querySelector('[data-item-key="' + key + '"]');
+        if (!block) return;
+        var rowsEl = block.querySelector("[data-rows]");
+        var label = block.dataset.label;
+        var rows = state.juice[key];
+        if (!rows || !rows.length) return;
+        rowsEl.innerHTML = "";
+        rows.forEach(function(r){
+          var row = juiceRow(key, label);
+          row.querySelector(".input-open-kg").value = r.openKg || "";
+          row.querySelector(".input-open-count").value = r.openCount || "";
+          row.querySelector(".input-closed-count").value = r.closed || "";
+          rowsEl.appendChild(row);
+        });
+        renumber(rowsEl, label);
+      });
+    }
     if (state.spirit){
       Object.keys(state.spirit).forEach(function(key){
         var block = catsReportEl.querySelector('[data-item-key="' + key + '"]');
@@ -973,8 +1131,10 @@
         rowsEl.innerHTML = "";
         rows.forEach(function(r){
           var row = spiritRow(key, label);
-          row.querySelector(".input-size").value = r.size || "0.75";
+          row.querySelector(".input-open-size").value = r.openSize || "0.75";
           row.querySelector(".input-open-kg").value = r.openKg || "";
+          row.querySelector(".input-open-count").value = r.openCount || "";
+          row.querySelector(".input-closed-size").value = r.closedSize || "0.75";
           row.querySelector(".input-closed-count").value = r.closed || "";
           rowsEl.appendChild(row);
         });
